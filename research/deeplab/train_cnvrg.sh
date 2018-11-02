@@ -1,5 +1,6 @@
 #!/bin/bash
 
-cd research
+export PYTHONPATH=${PYTHONPATH}:$(pwd)/research
+export PYTHONPATH=${PYTHONPATH}:$(pwd)/research/slim
 
-python3 deeplab/train.py 
+python3 research/deeplab/train.py
