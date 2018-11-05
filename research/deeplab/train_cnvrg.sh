@@ -3,4 +3,4 @@
 export PYTHONPATH=${PYTHONPATH}:$(pwd)/research
 export PYTHONPATH=${PYTHONPATH}:$(pwd)/research/slim
 
-ls -lh
+python3 research/deeplab/train.py
