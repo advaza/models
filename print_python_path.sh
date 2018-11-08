@@ -1,3 +1,3 @@
 #!/bin/bash
 
-echo "PYTHONPATH=$PYTHONPATH"
+printf "PYTHONPATH=$PYTHONPATH\n"
