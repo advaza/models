@@ -92,8 +92,33 @@ _PASCAL_VOC_SEG_INFORMATION = DatasetDescriptor(
         'train_aug': 10582,
         'trainval': 2913,
         'val': 1449,
+        'val_aug': 1449,
+        'test': 31,
     },
     num_classes=21,
+    ignore_label=255,
+)
+
+_PASCAL_VOC_SALIENCY_INFORMATION = DatasetDescriptor(
+    splits_to_sizes={
+        'train': 10582,
+        'train_aug': 10582,
+        'trainval': 2913,
+        'val': 1449,
+        'val_aug': 1449,
+    },
+    num_classes=2,
+    ignore_label=255,
+)
+
+_PASCAL_VOC_SALIENCY_LIVING_TRANSPORTATION_INFORMATION = DatasetDescriptor(
+    splits_to_sizes={
+        'train': 9315,
+        'train_aug': 9315,
+        'val': 1198,
+        'val_aug': 1198,
+    },
+    num_classes=2,
     ignore_label=255,
 )
 
@@ -108,11 +133,25 @@ _ADE20K_INFORMATION = DatasetDescriptor(
     ignore_label=0,
 )
 
+# These number (i.e., 'train'/'test') seems to have to be hard coded
+# You are required to figure it out for your training/testing example.
+_PFOX_INFORMATION = DatasetDescriptor(
+    splits_to_sizes={
+        'test': 31,  # num of samples in test set
+    },
+    num_classes=21,
+    ignore_label=255,
+)
+
 
 _DATASETS_INFORMATION = {
     'cityscapes': _CITYSCAPES_INFORMATION,
     'pascal_voc_seg': _PASCAL_VOC_SEG_INFORMATION,
     'ade20k': _ADE20K_INFORMATION,
+    'pfox': _PFOX_INFORMATION,
+    'saliency': _PASCAL_VOC_SALIENCY_INFORMATION,
+    'saliency_living_transport': _PASCAL_VOC_SALIENCY_LIVING_TRANSPORTATION_INFORMATION,
+
 }
 
 # Default file pattern of TFRecord of TensorFlow Example.
