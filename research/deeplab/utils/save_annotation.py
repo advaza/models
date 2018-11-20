@@ -29,7 +29,8 @@ def save_annotation(label,
                     save_dir,
                     filename,
                     add_colormap=True,
-                    colormap_type=get_dataset_colormap.get_pascal_name()):
+                    colormap_type=get_dataset_colormap.get_pascal_name(),
+                    original_image=None):
   """Saves the given label to image on disk.
 
   Args:
@@ -47,6 +48,22 @@ def save_annotation(label,
   else:
     colored_label = label
 
-  pil_image = img.fromarray(colored_label.astype(dtype=np.uint8))
-  with tf.gfile.Open('%s/%s.png' % (save_dir, filename), mode='w') as f:
-    pil_image.save(f, 'PNG')
+  array_image = colored_label.astype(dtype=np.uint8)
+  if original_image is not None:
+    array_image = (array_image + 0.5*original_image).clip(0, 255).astype(np.uint8)
+  pil_image = img.fromarray(array_image)
+  with tf.gfile.Open('%s/%s.jpg' % (save_dir, filename), mode='w') as f:
+    pil_image.save(f, 'JPEG')
+
+
+def save_np_array(np_array,
+                  save_dir,
+                  filename):
+  """Saves Numpy array np_array to file: save_dir/filename.npy.
+
+  Args:
+    np_array: np.ndarray, Numpy array to save.
+    save_dir: srt, directory to save the array file.
+    filename: str, filename to name the file.
+  """
+  np.save('%s/%s.npy' % (save_dir, filename), np_array)

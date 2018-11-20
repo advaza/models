@@ -28,6 +28,8 @@ from deeplab.datasets import segmentation_dataset
 from deeplab.utils import input_generator
 from deeplab.utils import save_annotation
 
+import pydensecrf.densecrf as dcrf
+
 slim = tf.contrib.slim
 
 flags = tf.app.flags
@@ -86,6 +88,13 @@ flags.DEFINE_enum('colormap_type', 'pascal', ['pascal', 'cityscapes'],
 flags.DEFINE_boolean('also_save_raw_predictions', False,
                      'Also save raw predictions.')
 
+flags.DEFINE_boolean('also_save_logits', False,
+                     'Also save raw predictions.')
+
+flags.DEFINE_boolean('apply_crf', False,
+                     'Replace argmax classifier with a CRF classifier to produce segmentation '
+                     'mask.')
+
 flags.DEFINE_integer('max_number_of_iterations', 0,
                      'Maximum number of visualization iterations. Will loop '
                      'indefinitely upon nonpositive values.')
@@ -95,6 +104,8 @@ _SEMANTIC_PREDICTION_SAVE_FOLDER = 'segmentation_results'
 
 # The folder where raw semantic segmentation predictions are saved.
 _RAW_SEMANTIC_PREDICTION_SAVE_FOLDER = 'raw_segmentation_results'
+
+_RAW_LOGITS_SAVE_FOLDER = 'raw_logits_results'
 
 # The format to save image.
 _IMAGE_FORMAT = '%06d_image'
@@ -107,6 +118,39 @@ _PREDICTION_FORMAT = '%06d_prediction'
 _CITYSCAPES_TRAIN_ID_TO_EVAL_ID = [7, 8, 11, 12, 13, 17, 19, 20, 21, 22,
                                    23, 24, 25, 26, 27, 28, 31, 32, 33]
 
+def applyCRF(image, prob_mask,
+             gaussian_sxy=2,
+             gaussian_compat=3,
+             bilateal_sxy=20,
+             srgb=7,
+             bilateral_compat=10):
+    """
+    Apply Dense CRF algorithm on the segmentation results (serving as unary values) with two
+    pairwise energy terms, one spatial and one bilateral. The goal is to refine the segmentation
+    results along edges of the original image.
+    :param image:
+    :param prob_mask:
+    :param gaussian_sxy:
+    :param gaussian_compat:
+    :param bilateal_sxy:
+    :param srgb:
+    :param bilateral_compat:
+    :return:
+    """
+    img_size = image.shape
+    d = dcrf.DenseCRF2D(img_size[1], img_size[0], prob_mask.shape[-1])
+
+    logprobs = -np.log(prob_mask + 1e-7)
+    reshaped = logprobs.reshape(-1, logprobs.shape[-1])
+    reshaped = np.transpose(reshaped).copy(order='C')
+    unary = reshaped.astype(np.float32)
+    d.setUnaryEnergy(unary)
+
+    d.addPairwiseGaussian(sxy=gaussian_sxy, compat=gaussian_compat)
+    d.addPairwiseBilateral(sxy=bilateal_sxy, srgb=srgb, rgbim=image, compat=bilateral_compat)
+
+    pred = d.inference(5)
+    return np.argmax(pred, axis=0).reshape((img_size[0], img_size[1]))
 
 def _convert_train_id_to_eval_id(prediction, train_id_to_eval_id):
   """Converts the predicted label for evaluation.
@@ -131,7 +175,7 @@ def _convert_train_id_to_eval_id(prediction, train_id_to_eval_id):
 
 def _process_batch(sess, original_images, semantic_predictions, image_names,
                    image_heights, image_widths, image_id_offset, save_dir,
-                   raw_save_dir, train_id_to_eval_id=None):
+                   raw_save_dir, logits_save_dir, train_id_to_eval_id=None, semantic_logits=None):
   """Evaluates one single batch qualitatively.
 
   Args:
@@ -150,8 +194,9 @@ def _process_batch(sess, original_images, semantic_predictions, image_names,
    semantic_predictions,
    image_names,
    image_heights,
-   image_widths) = sess.run([original_images, semantic_predictions,
-                             image_names, image_heights, image_widths])
+   image_widths,
+   semantic_logits) = sess.run([original_images, semantic_predictions, image_names, image_heights,
+                      image_widths, semantic_logits])
 
   num_image = semantic_predictions.shape[0]
   for i in range(num_image):
@@ -161,27 +206,44 @@ def _process_batch(sess, original_images, semantic_predictions, image_names,
     semantic_prediction = np.squeeze(semantic_predictions[i])
     crop_semantic_prediction = semantic_prediction[:image_height, :image_width]
 
+    crop_semantic_logit = np.squeeze(semantic_logits[i])[:image_height, :image_width]
+
+    if FLAGS.apply_crf:
+
+        crop_semantic_logit = np.exp(crop_semantic_logit)
+        crop_semantic_logit = \
+            crop_semantic_logit / np.sum(crop_semantic_logit, axis=-1)[...,np.newaxis]
+        crop_semantic_prediction = applyCRF(original_image, crop_semantic_logit, gaussian_sxy=7)
+
+    filename = image_names[i].decode('utf-8')
+
     # Save image.
     save_annotation.save_annotation(
-        original_image, save_dir, _IMAGE_FORMAT % (image_id_offset + i),
+        original_image, save_dir, filename,
         add_colormap=False)
 
     # Save prediction.
+    pred_filename = filename + '.pred.crf' if FLAGS.apply_crf else filename
     save_annotation.save_annotation(
         crop_semantic_prediction, save_dir,
-        _PREDICTION_FORMAT % (image_id_offset + i), add_colormap=True,
-        colormap_type=FLAGS.colormap_type)
+        pred_filename, add_colormap=True,
+        colormap_type=FLAGS.colormap_type, original_image=original_image)
 
     if FLAGS.also_save_raw_predictions:
-      image_filename = os.path.basename(image_names[i])
 
       if train_id_to_eval_id is not None:
         crop_semantic_prediction = _convert_train_id_to_eval_id(
             crop_semantic_prediction,
             train_id_to_eval_id)
+
       save_annotation.save_annotation(
-          crop_semantic_prediction, raw_save_dir, image_filename,
+          crop_semantic_prediction, raw_save_dir, filename,
           add_colormap=False)
+
+    if FLAGS.also_save_logits:
+      save_annotation.save_np_array(
+          crop_semantic_logit, logits_save_dir, filename,
+      )
 
 
 def main(unused_argv):
@@ -201,6 +263,9 @@ def main(unused_argv):
   raw_save_dir = os.path.join(
       FLAGS.vis_logdir, _RAW_SEMANTIC_PREDICTION_SAVE_FOLDER)
   tf.gfile.MakeDirs(raw_save_dir)
+  logits_save_dir = os.path.join(
+      FLAGS.vis_logdir, _RAW_LOGITS_SAVE_FOLDER)
+  tf.gfile.MakeDirs(logits_save_dir)
 
   tf.logging.info('Visualizing on %s set', FLAGS.vis_split)
 
@@ -224,18 +289,19 @@ def main(unused_argv):
 
     if tuple(FLAGS.eval_scales) == (1.0,):
       tf.logging.info('Performing single-scale test.')
-      predictions = model.predict_labels(
+      predictions, logits = model.predict_labels(
           samples[common.IMAGE],
           model_options=model_options,
           image_pyramid=FLAGS.image_pyramid)
     else:
       tf.logging.info('Performing multi-scale test.')
-      predictions = model.predict_labels_multi_scale(
+      predictions, logits = model.predict_labels_multi_scale(
           samples[common.IMAGE],
           model_options=model_options,
           eval_scales=FLAGS.eval_scales,
           add_flipped_images=FLAGS.add_flipped_images)
     predictions = predictions[common.OUTPUT_TYPE]
+    logits = logits[common.OUTPUT_TYPE]
 
     if FLAGS.min_resize_value and FLAGS.max_resize_value:
       # Only support batch_size = 1, since we assume the dimensions of original
@@ -258,6 +324,18 @@ def main(unused_argv):
                                  resized_shape,
                                  method=tf.image.ResizeMethod.NEAREST_NEIGHBOR,
                                  align_corners=True), 3)
+      logits = tf.slice(
+          logits,
+          [0, 0, 0],
+          [1, original_image_shape[0], original_image_shape[1]])
+      resized_shape = tf.to_int32([tf.squeeze(samples[common.HEIGHT]),
+                                   tf.squeeze(samples[common.WIDTH])])
+      logits = tf.squeeze(
+          tf.image.resize_images(tf.expand_dims(logits, 3),
+                                 resized_shape,
+                                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR,
+                                 align_corners=True), 3)
+
 
     tf.train.get_or_create_global_step()
     saver = tf.train.Saver(slim.get_variables_to_restore())
@@ -296,12 +374,14 @@ def main(unused_argv):
           _process_batch(sess=sess,
                          original_images=samples[common.ORIGINAL_IMAGE],
                          semantic_predictions=predictions,
+                         semantic_logits=logits,
                          image_names=samples[common.IMAGE_NAME],
                          image_heights=samples[common.HEIGHT],
                          image_widths=samples[common.WIDTH],
                          image_id_offset=image_id_offset,
                          save_dir=save_dir,
                          raw_save_dir=raw_save_dir,
+                         logits_save_dir=logits_save_dir,
                          train_id_to_eval_id=train_id_to_eval_id)
           image_id_offset += FLAGS.vis_batch_size
 

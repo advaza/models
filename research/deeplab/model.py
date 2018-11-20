@@ -175,6 +175,7 @@ def predict_labels(images, model_options, image_pyramid=None):
       fine_tune_batch_norm=False)
 
   predictions = {}
+  out_logits = {}
   for output in sorted(outputs_to_scales_to_logits):
     scales_to_logits = outputs_to_scales_to_logits[output]
     logits = tf.image.resize_bilinear(
@@ -182,8 +183,9 @@ def predict_labels(images, model_options, image_pyramid=None):
         tf.shape(images)[1:3],
         align_corners=True)
     predictions[output] = tf.argmax(logits, 3)
+    out_logits[output] = logits
 
-  return predictions
+  return predictions, out_logits
 
 
 def scale_dimension(dim, scale):
