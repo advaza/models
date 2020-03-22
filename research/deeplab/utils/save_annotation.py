@@ -32,7 +32,8 @@ def save_annotation(label,
                     add_colormap=True,
                     normalize_to_unit_values=False,
                     scale_values=False,
-                    colormap_type=get_dataset_colormap.get_pascal_name()):
+                    colormap_type=get_dataset_colormap.get_pascal_name(),
+                    add_to_image=None):
   """Saves the given label to image on disk.
 
   Args:
@@ -60,6 +61,9 @@ def save_annotation(label,
 
     if scale_values:
       colored_label = 255. * colored_label
+
+  if add_to_image is not None:
+    colored_label = add_to_image + 0.4 * colored_label
 
   pil_image = img.fromarray(colored_label.astype(dtype=np.uint8))
   with tf.gfile.Open('%s/%s.png' % (save_dir, filename), mode='w') as f:
