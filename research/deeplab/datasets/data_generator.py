@@ -55,6 +55,7 @@ import tensorflow as tf
 from deeplab import common
 from deeplab import input_preprocess
 
+
 # Named tuple to describe the dataset properties.
 DatasetDescriptor = collections.namedtuple(
     'DatasetDescriptor',
@@ -104,7 +105,7 @@ _DEEP_FASHION2_INFORMATION = DatasetDescriptor(
         'train': 191962,  # num of samples in images/training
         'val': 32154,  # num of samples in images/validation
     },
-    num_classes=13,
+    num_classes=14,
     ignore_label=0,
 )
 
@@ -142,7 +143,8 @@ class Dataset(object):
                num_readers=1,
                is_training=False,
                should_shuffle=False,
-               should_repeat=False):
+               should_repeat=False,
+               num_classes=0):
     """Initializes the dataset.
 
     Args:
@@ -200,7 +202,11 @@ class Dataset(object):
     self.should_shuffle = should_shuffle
     self.should_repeat = should_repeat
 
-    self.num_of_classes = _DATASETS_INFORMATION[self.dataset_name].num_classes
+    if dataset_name in ['deep_fashion2'] and num_classes > 0:
+        self.num_of_classes = num_classes + 1
+    else:
+        self.num_of_classes = _DATASETS_INFORMATION[self.dataset_name].num_classes
+
     self.ignore_label = _DATASETS_INFORMATION[self.dataset_name].ignore_label
 
   def _parse_function(self, example_proto):

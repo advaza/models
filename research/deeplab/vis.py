@@ -87,6 +87,10 @@ flags.DEFINE_string('vis_split', 'val',
 
 flags.DEFINE_string('dataset_dir', None, 'Where the dataset reside.')
 
+
+flags.DEFINE_integer('num_classes', 0,
+                     'Number of classes in the dataset, not including the background.')
+
 flags.DEFINE_enum('colormap_type', 'pascal', ['pascal', 'cityscapes', 'ade20k'],
                   'Visualization colormap type.')
 
@@ -207,7 +211,8 @@ def main(unused_argv):
       model_variant=FLAGS.model_variant,
       is_training=False,
       should_shuffle=False,
-      should_repeat=False)
+      should_repeat=False,
+      num_classes=FLAGS.num_classes)
 
   train_id_to_eval_id = None
   if dataset.dataset_name == data_generator.get_cityscapes_dataset_name():

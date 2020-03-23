@@ -82,6 +82,10 @@ flags.DEFINE_string('eval_split', 'val',
 
 flags.DEFINE_string('dataset_dir', None, 'Where the dataset reside.')
 
+
+flags.DEFINE_integer('num_classes', 0,
+                     'Number of classes in the dataset, not including the background.')
+
 flags.DEFINE_integer('max_number_of_evaluations', 0,
                      'Maximum number of eval iterations. Will loop '
                      'indefinitely upon nonpositive values.')
@@ -103,7 +107,8 @@ def main(unused_argv):
       num_readers=2,
       is_training=False,
       should_shuffle=False,
-      should_repeat=False)
+      should_repeat=False,
+      num_classes=FLAGS.num_classes)
 
   tf.gfile.MakeDirs(FLAGS.eval_logdir)
   tf.logging.info('Evaluating on %s set', FLAGS.eval_split)

@@ -217,6 +217,9 @@ flags.DEFINE_string('train_split', 'train',
 
 flags.DEFINE_string('dataset_dir', None, 'Where the dataset reside.')
 
+flags.DEFINE_integer('num_classes', 0,
+                     'Number of classes in the dataset, not including the background.')
+
 
 def _build_deeplab(iterator, outputs_to_num_classes, ignore_label):
   """Builds a clone of DeepLab.
@@ -307,7 +310,8 @@ def main(unused_argv):
           num_readers=4,
           is_training=True,
           should_shuffle=True,
-          should_repeat=True)
+          should_repeat=True,
+          num_classes=FLAGS.num_classes)
 
     # Create the global step on the device storing the variables.
     with tf.device(config.variables_device()):
