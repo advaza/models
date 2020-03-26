@@ -31,31 +31,42 @@ FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string(
     'train_image_folder',
-    './ADE20K/ADEChallengeData2016/images/training',
+    None,
     'Folder containing trainng images')
 tf.app.flags.DEFINE_string(
     'train_image_label_folder',
-    './ADE20K/ADEChallengeData2016/annotations/training',
-    'Folder containing annotations for trainng images')
+    None,
+    'Folder containing masks for training images')
 
 tf.app.flags.DEFINE_string(
     'val_image_folder',
-    './ADE20K/ADEChallengeData2016/images/validation',
+    None,
     'Folder containing validation images')
 
 tf.app.flags.DEFINE_string(
     'val_image_label_folder',
-    './ADE20K/ADEChallengeData2016/annotations/validation',
-    'Folder containing annotations for validation')
+    None,
+    'Folder containing masks for validation')
 
 tf.app.flags.DEFINE_string(
-    'output_dir', './ADE20K/tfrecord',
+    'test_image_folder',
+    None,
+    'Folder containing validation images')
+
+tf.app.flags.DEFINE_string(
+    'test_image_label_folder',
+    None,
+    'Folder containing masks for validation')
+
+
+tf.app.flags.DEFINE_string(
+    'output_dir', './tfrecord',
     'Path to save converted tfrecord of Tensorflow example')
 
-_NUM_SHARDS = 4
+tf.app.flags.DEFINE_integer('num_shards', 4, 'Number of output tfrecords.')
 
 
-def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir):
+def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
   """Converts the ADE20k dataset into into tfrecord format.
 
   Args:
@@ -78,15 +89,15 @@ def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir):
     seg_names.append(seg)
 
   num_images = len(img_names)
-  num_per_shard = int(math.ceil(num_images / _NUM_SHARDS))
+  num_per_shard = int(math.ceil(num_images / num_shards))
 
   image_reader = build_data.ImageReader('jpeg', channels=3)
   label_reader = build_data.ImageReader('png', channels=1)
 
-  for shard_id in range(_NUM_SHARDS):
+  for shard_id in range(num_shards):
     output_filename = os.path.join(
         FLAGS.output_dir,
-        '%s-%05d-of-%05d.tfrecord' % (dataset_split, shard_id, _NUM_SHARDS))
+        '%s-%05d-of-%05d.tfrecord' % (dataset_split, shard_id, num_shards))
     with tf.python_io.TFRecordWriter(output_filename) as tfrecord_writer:
       start_idx = shard_id * num_per_shard
       end_idx = min((shard_id + 1) * num_per_shard, num_images)
@@ -114,9 +125,22 @@ def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir):
 
 def main(unused_argv):
   tf.gfile.MakeDirs(FLAGS.output_dir)
-  _convert_dataset(
-      'train', FLAGS.train_image_folder, FLAGS.train_image_label_folder)
-  _convert_dataset('val', FLAGS.val_image_folder, FLAGS.val_image_label_folder)
+
+  if FLAGS.train_image_folder and FLAGS.train_image_label_folder:
+    _convert_dataset(
+          'train',
+          FLAGS.train_image_folder,
+          FLAGS.train_image_label_folder,
+          num_shards=FLAGS.num_shards
+      )
+
+  if FLAGS.val_image_folder and FLAGS.val_image_label_folder:
+    _convert_dataset('val', FLAGS.val_image_folder, FLAGS.val_image_label_folder,
+                     num_shards=FLAGS.num_shards)
+
+  if FLAGS.test_image_folder and FLAGS.test_image_label_folder:
+      _convert_dataset('test', FLAGS.test_image_folder, FLAGS.test_image_label_folder,
+                       num_shards=FLAGS.num_shards)
 
 
 if __name__ == '__main__':
