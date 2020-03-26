@@ -106,7 +106,7 @@ _DEEP_FASHION2_INFORMATION = DatasetDescriptor(
         'val': 32154,  # num of samples in images/validation
     },
     num_classes=14,
-    ignore_label=0,
+    ignore_label=255,
 )
 
 _DATASETS_INFORMATION = {
