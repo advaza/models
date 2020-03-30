@@ -104,6 +104,7 @@ _DEEP_FASHION2_INFORMATION = DatasetDescriptor(
     splits_to_sizes={
         'train': 191962,  # num of samples in images/training
         'val': 32154,  # num of samples in images/validation
+        'test': 100,
     },
     num_classes=14,
     ignore_label=255,
