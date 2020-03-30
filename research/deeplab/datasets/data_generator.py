@@ -255,6 +255,7 @@ class Dataset(object):
     image = _decode_image(parsed_features['image/encoded'], channels=3)
 
     label = None
+    print("self.split_name:", self.split_name)
     if self.split_name != common.TEST_SET:
       label = _decode_image(
           parsed_features['image/segmentation/class/encoded'], channels=1)
@@ -281,8 +282,7 @@ class Dataset(object):
 
       label.set_shape([None, None, 1])
 
-      if common.LABELS_CLASS in sample:
-          sample[common.LABELS_CLASS] = label
+      sample[common.LABELS_CLASS] = label
 
     return sample
 
