@@ -281,7 +281,8 @@ class Dataset(object):
 
       label.set_shape([None, None, 1])
 
-      sample[common.LABELS_CLASS] = label
+      if common.LABELS_CLASS in sample:
+          sample[common.LABELS_CLASS] = label
 
     return sample
 
