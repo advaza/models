@@ -29,7 +29,7 @@ import tensorflow as tf
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string(
+tf.app.flags.DEFINE_multi_string(
     'train_image_folder',
     None,
     'Folder containing trainng images')
@@ -63,6 +63,10 @@ tf.app.flags.DEFINE_string(
     'output_dir', './tfrecord',
     'Path to save converted tfrecord of Tensorflow example')
 
+tf.app.flags.DEFINE_string(
+    'basename', None,
+    'Basename to add to tfrecord.')
+
 tf.app.flags.DEFINE_integer('num_shards', 4, 'Number of output tfrecords.')
 
 
@@ -79,25 +83,29 @@ def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
   """
 
   img_names = tf.gfile.Glob(os.path.join(dataset_dir, '*.jpg'))
-  random.shuffle(img_names)
-  seg_names = []
-  for f in img_names:
-    # get the filename without the extension
-    basename = os.path.basename(f).split('.')[0]
-    # cover its corresponding *_seg.png
-    seg = os.path.join(dataset_label_dir, basename+'.png')
-    seg_names.append(seg)
+  if dataset_split == 'train':
+      random.shuffle(img_names)
+
+  if dataset_label_dir:
+      seg_names = []
+      for f in img_names:
+        # get the filename without the extension
+        basename = os.path.basename(f).split('.')[0]
+        # cover its corresponding *_seg.png
+        seg = os.path.join(dataset_label_dir, basename+'.png')
+        seg_names.append(seg)
+        label_reader = build_data.ImageReader('png', channels=1)
 
   num_images = len(img_names)
   num_per_shard = int(math.ceil(num_images / num_shards))
 
   image_reader = build_data.ImageReader('jpeg', channels=3)
-  label_reader = build_data.ImageReader('png', channels=1)
 
   for shard_id in range(num_shards):
     output_filename = os.path.join(
         FLAGS.output_dir,
-        '%s-%05d-of-%05d.tfrecord' % (dataset_split, shard_id, num_shards))
+        '%s-%s%05d-of-%05d.tfrecord' %
+        (dataset_split, FLAGS.basename + '-' if FLAGS.basename else '', shard_id, num_shards))
     with tf.python_io.TFRecordWriter(output_filename) as tfrecord_writer:
       start_idx = shard_id * num_per_shard
       end_idx = min((shard_id + 1) * num_per_shard, num_images)
