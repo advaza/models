@@ -468,7 +468,8 @@ def resize_to_range(image,
   """
   with tf.name_scope(scope, 'resize_to_range', [image]):
     new_tensor_list = []
-    min_size = tf.cast(min_size, tf.float32)
+    if min_size is not None:
+        min_size = tf.cast(min_size, tf.float32)
     if max_size is not None:
       max_size = tf.cast(max_size, tf.float32)
       # Modify the max_size to be a multiple of factor plus 1 and make sure the
