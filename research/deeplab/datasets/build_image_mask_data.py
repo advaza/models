@@ -82,7 +82,8 @@ def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
     RuntimeError: If loaded image and label have different shape.
   """
 
-  img_names = tf.gfile.Glob(os.path.join(dataset_dir, '*.jpg'))
+  img_names = tf.gfile.Glob(os.path.join(dataset_dir, '*.jpg')) +  \
+              tf.gfile.Glob(os.path.join(dataset_dir, '*.png'))
   if dataset_split == 'train':
       random.shuffle(img_names)
 
