@@ -28,6 +28,7 @@ from six.moves import range
 import tensorflow as tf
 from tensorflow.contrib import quantize as contrib_quantize
 from tensorflow.contrib import training as contrib_training
+from tensorflow.python.framework import tensor_util
 from deeplab import common
 from deeplab import model
 from deeplab.datasets import data_generator
@@ -272,7 +273,7 @@ def main(unused_argv):
           [1, original_image_shape[0], original_image_shape[1]])
       resized_shape = tf.to_int32([tf.squeeze(samples[common.HEIGHT]),
                                    tf.squeeze(samples[common.WIDTH])])
-      print("predictions", predictions, "resized_shape:", resized_shape)
+      print("predictions", predictions, "resized_shape:", tensor_util.constant_value_as_shape(resized_shape))
       predictions = tf.squeeze(
           tf.image.resize_images(tf.expand_dims(predictions, 3),
                                  resized_shape,
