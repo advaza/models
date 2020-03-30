@@ -149,7 +149,7 @@ def main(unused_argv):
     _convert_dataset('val', FLAGS.val_image_folder, FLAGS.val_image_label_folder,
                      num_shards=FLAGS.num_shards)
 
-  if FLAGS.test_image_folder and FLAGS.test_image_label_folder:
+  if FLAGS.test_image_folder:
       _convert_dataset('test', FLAGS.test_image_folder, FLAGS.test_image_label_folder,
                        num_shards=FLAGS.num_shards)
 
