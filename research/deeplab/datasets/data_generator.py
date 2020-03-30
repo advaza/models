@@ -255,7 +255,8 @@ class Dataset(object):
     image = _decode_image(parsed_features['image/encoded'], channels=3)
 
     label = None
-    print("self.split_name:", self.split_name)
+    print("self.split_name:", self.split_name, self.split_name != common.TEST_SET)
+
     if self.split_name != common.TEST_SET:
       label = _decode_image(
           parsed_features['image/segmentation/class/encoded'], channels=1)
@@ -298,6 +299,7 @@ class Dataset(object):
     Raises:
       ValueError: Ground truth label not provided during training.
     """
+    print("sample.keys()", sample.keys())
     image = sample[common.IMAGE]
     label = sample[common.LABELS_CLASS]
 
