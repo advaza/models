@@ -283,7 +283,7 @@ class Dataset(object):
 
       label.set_shape([None, None, 1])
 
-    sample[common.LABELS_CLASS] = label
+      sample[common.LABELS_CLASS] = label
 
     return sample
 
@@ -299,9 +299,10 @@ class Dataset(object):
     Raises:
       ValueError: Ground truth label not provided during training.
     """
-    print("sample.keys()", sample.keys())
     image = sample[common.IMAGE]
-    label = sample[common.LABELS_CLASS]
+    label = None
+    if common.LABELS_CLASS in sample:
+        label = sample[common.LABELS_CLASS]
 
     original_image, image, label = input_preprocess.preprocess_image_and_label(
         image=image,
