@@ -283,7 +283,7 @@ class Dataset(object):
 
       label.set_shape([None, None, 1])
 
-      sample[common.LABELS_CLASS] = label
+    sample[common.LABELS_CLASS] = label
 
     return sample
 
