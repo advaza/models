@@ -1,6 +1,6 @@
 # Copyright (c) 2017 Lightricks. All rights reserved.
 
-from example_utils import ParseConfigFeatures
+from utils.example_utils import ParseConfigFeatures
 
 
 class ExampleFeatures(object):
