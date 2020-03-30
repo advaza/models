@@ -67,10 +67,10 @@ tf.app.flags.DEFINE_integer('num_shards', 4, 'Number of output tfrecords.')
 
 
 def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
-  """Converts the ADE20k dataset into into tfrecord format.
+  """Converts a generic image mask dataset into into tfrecord format.
 
   Args:
-    dataset_split: Dataset split (e.g., train, val).
+    dataset_split: Dataset split (e.g., train, val, test).
     dataset_dir: Dir in which the dataset locates.
     dataset_label_dir: Dir in which the annotations locates.
 
@@ -109,12 +109,14 @@ def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
         image_filename = img_names[i]
         image_data = tf.gfile.FastGFile(image_filename, 'rb').read()
         height, width = image_reader.read_image_dims(image_data)
-        # Read the semantic segmentation annotation.
-        seg_filename = seg_names[i]
-        seg_data = tf.gfile.FastGFile(seg_filename, 'rb').read()
-        seg_height, seg_width = label_reader.read_image_dims(seg_data)
-        if height != seg_height or width != seg_width:
-          raise RuntimeError('Shape mismatched between image and label.')
+        seg_data = None
+        if dataset_label_dir:
+            # Read the semantic segmentation annotation.
+            seg_filename = seg_names[i]
+            seg_data = tf.gfile.FastGFile(seg_filename, 'rb').read()
+            seg_height, seg_width = label_reader.read_image_dims(seg_data)
+            if height != seg_height or width != seg_width:
+              raise RuntimeError('Shape mismatched between image and label.')
         # Convert to tf example.
         example = build_data.image_seg_to_tfexample(
             image_data, img_names[i], height, width, seg_data)
