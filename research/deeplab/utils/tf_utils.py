@@ -1,6 +1,10 @@
 # Copyright (c) 2017 Lightricks. All rights reserved.
-from tensorflow.python import pywrap_tensorflow
+import io
+import numpy as np
 import tensorflow as tf
+
+from PIL import Image
+from tensorflow.python import pywrap_tensorflow
 
 
 def run_queue_runner_session(tensors_to_evaluate, process_values_function, num_steps=None):
@@ -118,3 +122,8 @@ def inspect_tfrecord(tfrecord_file, id_feature, parser, features=None, selected_
     )
 
     return features_values
+
+
+def decode_image(bytes_image):
+
+    return np.asarray(Image.open(io.BytesIO(bytes_image)))

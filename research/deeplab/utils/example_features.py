@@ -1,6 +1,6 @@
 # Copyright (c) 2017 Lightricks. All rights reserved.
 
-from deeplab.utils.example_utils import ParseConfigFeatures
+from example_utils import ParseConfigFeatures
 
 
 class ExampleFeatures(object):
