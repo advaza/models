@@ -29,7 +29,7 @@ import tensorflow as tf
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE(
+tf.app.flags.DEFINE_string(
     'train_image_folder',
     None,
     'Folder containing trainng images')
