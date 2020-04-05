@@ -143,11 +143,10 @@ def _convert_train_id_to_eval_id(prediction, train_id_to_eval_id):
   return converted_prediction
 
 
-def _process_batch(sess, original_images, semantic_predictions, image_names,
+def _process_batch(sess, original_images, semantic_predictions, semantic_probs, image_names,
                    image_heights, image_widths, image_id_offset, save_dir,
                    raw_save_dir, train_id_to_eval_id=None):
   """Evaluates one single batch qualitatively.
-
   Args:
     sess: TensorFlow session.
     original_images: One batch of original images.
@@ -162,9 +161,10 @@ def _process_batch(sess, original_images, semantic_predictions, image_names,
   """
   (original_images,
    semantic_predictions,
+   semantic_probs,
    image_names,
    image_heights,
-   image_widths) = sess.run([original_images, semantic_predictions,
+   image_widths) = sess.run([original_images, semantic_predictions, semantic_probs,
                              image_names, image_heights, image_widths])
 
   num_image = semantic_predictions.shape[0]
@@ -212,6 +212,7 @@ def _process_batch(sess, original_images, semantic_predictions, image_names,
       save_annotation.save_annotation(
           crop_semantic_prediction, raw_save_dir, image_filename,
           add_colormap=False)
+      np.save('%s/%s.npz' % (raw_save_dir, image_filename), semantic_probs)
 
 
 def main(unused_argv):
@@ -273,6 +274,8 @@ def main(unused_argv):
           model_options=model_options,
           eval_scales=FLAGS.eval_scales,
           add_flipped_images=FLAGS.add_flipped_images)
+
+    probs = predictions[common.OUTPUT_TYPE + model.PROB_SUFFIX]
     predictions = predictions[common.OUTPUT_TYPE]
 
     if FLAGS.min_resize_value and FLAGS.max_resize_value:
@@ -287,6 +290,10 @@ def main(unused_argv):
       original_image_shape = tf.shape(original_image)
       predictions = tf.slice(
           predictions,
+          [0, 0, 0],
+          [1, original_image_shape[0], original_image_shape[1]])
+      probs = tf.slice(
+          probs,
           [0, 0, 0],
           [1, original_image_shape[0], original_image_shape[1]])
 
@@ -321,6 +328,7 @@ def main(unused_argv):
           _process_batch(sess=sess,
                          original_images=samples[common.ORIGINAL_IMAGE],
                          semantic_predictions=predictions,
+                         semantic_probs=probs,
                          image_names=samples[common.IMAGE_NAME],
                          image_heights=samples[common.HEIGHT],
                          image_widths=samples[common.WIDTH],
