@@ -294,8 +294,8 @@ def main(unused_argv):
           [1, original_image_shape[0], original_image_shape[1]])
       probs = tf.slice(
           probs,
-          [0, 0, 0],
-          [1, original_image_shape[0], original_image_shape[1]])
+          [0, 0, 0, 0],
+          [1, original_image_shape[0], original_image_shape[1], probs.get_shape()[-1]])
 
     tf.train.get_or_create_global_step()
     if FLAGS.quantize_delay_step >= 0:
