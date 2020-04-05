@@ -99,7 +99,7 @@ def vis_segmentation(image,
   for i in range(1, soft_overlay.shape[2]):
     color_image = np.full_like(image, fill_value=colormap[i])
     soft_overlay += color_image * np.stack([logits[:, :, i]]*3, axis=-1)
-    overlay[seg_map==i] += (0.6 * overlay[seg_map==i] + 0.4 * color_image[seg_map==i])
+    overlay[seg_map==i] = (0.6 * overlay[seg_map==i] + 0.4 * color_image[seg_map==i])
 
   soft_overlay = soft_overlay.astype(np.uint8)
   overlay = overlay.astype(np.uint8)
