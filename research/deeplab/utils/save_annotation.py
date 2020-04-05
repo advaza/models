@@ -126,7 +126,7 @@ def vis_segmentation(image,
   # plt.title('segmentation overlay')
 
   if label_names is not None:
-    label_names, = label_names[1:]
+    label_names = label_names[1:]
     full_color_map = np.arange(len(label_names)).reshape(len(label_names), 1)
     full_color_map = get_dataset_colormap.label_to_color_image(full_color_map, colormap_type)
     unique_labels = np.unique(seg_map)[1:]
