@@ -122,7 +122,7 @@ def vis_segmentation(image,
 
   if label_names is not None:
     full_color_map = np.arange(len(label_names)).reshape(len(label_names), 1)
-    full_color_map = get_dataset_colormap.label_to_color_image(full_color_map)
+    full_color_map = get_dataset_colormap.label_to_color_image(full_color_map, colormap_type)
     unique_labels = np.unique(seg_map)
     ax = plt.subplot(grid_spec[3])
     plt.imshow(
