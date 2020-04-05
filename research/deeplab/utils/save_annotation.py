@@ -94,13 +94,16 @@ def vis_segmentation(image,
   # plt.axis('off')
   # plt.title('segmentation map')
 
-  soft_overlay = np.copy(image).astype(np.float32)
+  soft_overlay = np.zeros_like(image, dtype=np.float32)
+  image = image.astype(np.float32)
   overlay = np.copy(image).astype(np.float32)
-  for i in range(1, soft_overlay.shape[2]):
+  num_classes = logits.shape[2]
+  for i in range(1, num_classes):
     color_image = np.full_like(image, fill_value=colormap[i])
-    soft_overlay = 0.6 * soft_overlay + 0.4 * color_image * np.stack([logits[:, :, i]]*3, axis=-1)
-    overlay[seg_map==i] = (0.6 * overlay[seg_map==i] + 0.4 * color_image[seg_map==i])
+    soft_overlay += (1./num_classes) * color_image * np.stack([logits[:, :, i]]*3, axis=-1)
+    overlay[seg_map==i] = (0.3 * overlay[seg_map==i] + 0.7 * color_image[seg_map==i])
 
+  soft_overlay = 0.3 * image[overlay > 0] + 0.7 * soft_overlay[overlay > 0]
   soft_overlay = soft_overlay.astype(np.uint8)
   overlay = overlay.astype(np.uint8)
 
