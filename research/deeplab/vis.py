@@ -212,7 +212,7 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
       save_annotation.save_annotation(
           crop_semantic_prediction, raw_save_dir, image_filename,
           add_colormap=False)
-      np.save('%s/%s.npz' % (raw_save_dir, image_filename), semantic_probs)
+      np.save('%s/%s' % (raw_save_dir, image_filename), semantic_probs)
 
 
 def main(unused_argv):
