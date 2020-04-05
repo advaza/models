@@ -71,11 +71,14 @@ def save_annotation(label,
 
 def vis_segmentation(image,
                      seg_map,
-                     save_dir,
-                     filename,
+                     logits=None,
+                     save_dir=None,
+                     filename=None,
                      colormap_type=get_dataset_colormap.get_pascal_name(),
                      label_names=None):
   """Visualizes input image, segmentation map and overlay view."""
+
+  colormap = get_dataset_colormap.create_label_colormap(colormap_type)
   image = image.astype(dtype=np.uint8)
   plt.figure(figsize=(15, 5))
   grid_spec = gridspec.GridSpec(1, 4, width_ratios=[6, 6, 6, 1])
@@ -84,18 +87,38 @@ def vis_segmentation(image,
   plt.axis('off')
   plt.title('input image')
 
-  plt.subplot(grid_spec[1])
+  # plt.subplot(grid_spec[1])
   seg_image = get_dataset_colormap.label_to_color_image(
       seg_map, colormap_type).astype(np.uint8)
-  plt.imshow(seg_image)
+  # plt.imshow(seg_image)
+  # plt.axis('off')
+  # plt.title('segmentation map')
+
+  soft_overlay = np.copy(image).astype(np.float32)
+  overlay = np.copy(image).astype(np.float32)
+  for i in range(1, soft_overlay.shape[2]):
+    color_image = np.full_like(image, fill_value=colormap[i])
+    soft_overlay += color_image * np.stack([logits[:, :, i]]*3, axis=-1)
+    overlay[seg_image==i] += 0.4 * color_image[seg_image==i]
+
+  soft_overlay = soft_overlay.astype(np.uint8)
+  overlay = overlay.astype(np.uint8)
+
+  plt.subplot(grid_spec[1])
+  plt.imshow(soft_overlay)
   plt.axis('off')
-  plt.title('segmentation map')
+  plt.title('soft segmentation overlay')
 
   plt.subplot(grid_spec[2])
-  plt.imshow(image)
-  plt.imshow(seg_image, alpha=0.7)
+  plt.imshow(overlay)
   plt.axis('off')
   plt.title('segmentation overlay')
+
+  # plt.subplot(grid_spec[2])
+  # plt.imshow(image)
+  # plt.imshow(seg_image, alpha=0.7)
+  # plt.axis('off')
+  # plt.title('segmentation overlay')
 
   if label_names is not None:
     full_color_map = np.arange(len(label_names)).reshape(len(label_names), 1)

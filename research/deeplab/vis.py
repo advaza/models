@@ -91,7 +91,7 @@ flags.DEFINE_string('dataset_dir', None, 'Where the dataset reside.')
 flags.DEFINE_integer('num_classes', 0,
                      'Number of classes in the dataset, not including the background.')
 
-flags.DEFINE_enum('colormap_type', 'pascal', ['pascal', 'cityscapes', 'ade20k'],
+flags.DEFINE_enum('colormap_type', 'pascal', ['pascal', 'cityscapes', 'ade20k', 'deepfashion2'],
                   'Visualization colormap type.')
 
 flags.DEFINE_boolean('also_save_raw_predictions', False,
