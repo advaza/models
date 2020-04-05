@@ -198,7 +198,7 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
 
     # vis using pyplot
     save_annotation.vis_segmentation(
-        original_image, crop_semantic_prediction, save_dir,
+        original_image, crop_semantic_prediction, semantic_probs, save_dir,
         _OVERLAY_FORMAT % image_filename,
         colormap_type=FLAGS.colormap_type,
         label_names=LABEL_NAMES)
