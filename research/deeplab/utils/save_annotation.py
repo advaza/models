@@ -88,8 +88,8 @@ def vis_segmentation(image,
   plt.title('input image')
 
   # plt.subplot(grid_spec[1])
-  seg_image = get_dataset_colormap.label_to_color_image(
-      seg_map, colormap_type).astype(np.uint8)
+  # seg_image = get_dataset_colormap.label_to_color_image(
+  #     seg_map, colormap_type).astype(np.uint8)
   # plt.imshow(seg_image)
   # plt.axis('off')
   # plt.title('segmentation map')
@@ -99,7 +99,7 @@ def vis_segmentation(image,
   for i in range(1, soft_overlay.shape[2]):
     color_image = np.full_like(image, fill_value=colormap[i])
     soft_overlay += color_image * np.stack([logits[:, :, i]]*3, axis=-1)
-    overlay[seg_image==i] += 0.4 * color_image[seg_image==i]
+    overlay[seg_map==i] += 0.4 * color_image[seg_map==i]
 
   soft_overlay = soft_overlay.astype(np.uint8)
   overlay = overlay.astype(np.uint8)
