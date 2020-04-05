@@ -24,6 +24,8 @@ import PIL.Image as img
 import tensorflow as tf
 
 from deeplab.utils import get_dataset_colormap
+from matplotlib import gridspec
+from matplotlib import pyplot as plt
 
 
 def save_annotation(label,
@@ -62,9 +64,51 @@ def save_annotation(label,
     if scale_values:
       colored_label = 255. * colored_label
 
-  if add_to_image is not None:
-    colored_label = add_to_image + 0.4 * colored_label
-
   pil_image = img.fromarray(colored_label.astype(dtype=np.uint8))
   with tf.gfile.Open('%s/%s.png' % (save_dir, filename), mode='w') as f:
     pil_image.save(f, 'PNG')
+
+
+def vis_segmentation(image,
+                     seg_map,
+                     save_dir,
+                     filename,
+                     colormap_type=get_dataset_colormap.get_pascal_name(),
+                     label_names=None):
+  """Visualizes input image, segmentation map and overlay view."""
+  image = image.astype(dtype=np.uint8)
+  plt.figure(figsize=(15, 5))
+  grid_spec = gridspec.GridSpec(1, 4, width_ratios=[6, 6, 6, 1])
+  plt.subplot(grid_spec[0])
+  plt.imshow(image)
+  plt.axis('off')
+  plt.title('input image')
+
+  plt.subplot(grid_spec[1])
+  seg_image = get_dataset_colormap.label_to_color_image(
+      seg_map, colormap_type).astype(np.uint8)
+  plt.imshow(seg_image)
+  plt.axis('off')
+  plt.title('segmentation map')
+
+  plt.subplot(grid_spec[2])
+  plt.imshow(image)
+  plt.imshow(seg_image, alpha=0.7)
+  plt.axis('off')
+  plt.title('segmentation overlay')
+
+  if label_names is not None:
+    full_color_map = np.arange(len(label_names)).reshape(len(label_names), 1)
+    full_color_map = get_dataset_colormap.label_to_color_image(full_color_map)
+    unique_labels = np.unique(seg_map)
+    ax = plt.subplot(grid_spec[3])
+    plt.imshow(
+      full_color_map[unique_labels].astype(np.uint8), interpolation='nearest')
+    ax.yaxis.tick_right()
+    plt.yticks(range(len(unique_labels)), label_names[unique_labels])
+    plt.xticks([], [])
+    ax.tick_params(width=0.0)
+
+  plt.grid('off')
+  with tf.gfile.Open('%s/%s.png' % (save_dir, filename), mode='w') as f:
+    plt.savefig(f)

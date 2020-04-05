@@ -88,7 +88,6 @@ flags.DEFINE_string('vis_split', 'val',
 
 flags.DEFINE_string('dataset_dir', None, 'Where the dataset reside.')
 
-
 flags.DEFINE_integer('num_classes', 0,
                      'Number of classes in the dataset, not including the background.')
 
@@ -109,10 +108,13 @@ _SEMANTIC_PREDICTION_SAVE_FOLDER = 'segmentation_results'
 _RAW_SEMANTIC_PREDICTION_SAVE_FOLDER = 'raw_segmentation_results'
 
 # The format to save image.
-_IMAGE_FORMAT = '%06d_image'
+_IMAGE_FORMAT = '%s_image'
 
 # The format to save prediction
-_PREDICTION_FORMAT = '%06d_prediction'
+_PREDICTION_FORMAT = '%s_prediction'
+
+# The format to save overlay
+_OVERLAY_FORMAT = '%s_overlay'
 
 # To evaluate Cityscapes results on the evaluation server, the labels used
 # during training should be mapped to the labels for evaluation.
@@ -166,26 +168,42 @@ def _process_batch(sess, original_images, semantic_predictions, image_names,
                              image_names, image_heights, image_widths])
 
   num_image = semantic_predictions.shape[0]
+
+  LABEL_NAMES = np.asarray([
+      'background', 'bottom', 'top',
+  ])
+
   for i in range(num_image):
     image_height = np.squeeze(image_heights[i])
     image_width = np.squeeze(image_widths[i])
     original_image = np.squeeze(original_images[i])
     semantic_prediction = np.squeeze(semantic_predictions[i])
-    crop_semantic_prediction = semantic_prediction[:image_height, :image_width]
+    semantic_probs = np.squeeze(semantic_probs[i])
 
+    crop_semantic_prediction = semantic_prediction
+    if not (FLAGS.min_resize_value and FLAGS.max_resize_value):
+      crop_semantic_prediction = semantic_prediction[:image_height, :image_width]
+
+    image_filename = ".".join(os.path.basename(image_names[i].decode("utf-8")).split(".")[:-1])
     # Save image.
     save_annotation.save_annotation(
-        original_image, save_dir, _IMAGE_FORMAT % (image_id_offset + i),
+        original_image, save_dir, _IMAGE_FORMAT % image_filename,
         add_colormap=False)
 
     # Save prediction.
     save_annotation.save_annotation(
         crop_semantic_prediction, save_dir,
-        _PREDICTION_FORMAT % (image_id_offset + i), add_colormap=True,
-        colormap_type=FLAGS.colormap_type, add_to_image=original_image)
+        _PREDICTION_FORMAT % image_filename, add_colormap=True,
+        colormap_type=FLAGS.colormap_type)
+
+    # vis using pyplot
+    save_annotation.vis_segmentation(
+        original_image, crop_semantic_prediction, save_dir,
+        _OVERLAY_FORMAT % image_filename,
+        colormap_type=FLAGS.colormap_type,
+        label_names=LABEL_NAMES)
 
     if FLAGS.also_save_raw_predictions:
-      image_filename = os.path.basename(image_names[i])
 
       if train_id_to_eval_id is not None:
         crop_semantic_prediction = _convert_train_id_to_eval_id(
@@ -271,14 +289,6 @@ def main(unused_argv):
           predictions,
           [0, 0, 0],
           [1, original_image_shape[0], original_image_shape[1]])
-      resized_shape = tf.to_int32([tf.squeeze(samples[common.HEIGHT]),
-                                   tf.squeeze(samples[common.WIDTH])])
-      print("predictions", predictions, "resized_shape:", tensor_util.constant_value_as_shape(resized_shape))
-      predictions = tf.squeeze(
-          tf.image.resize_images(tf.expand_dims(predictions, 3),
-                                 resized_shape,
-                                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR,
-                                 align_corners=True), 3)
 
     tf.train.get_or_create_global_step()
     if FLAGS.quantize_delay_step >= 0:
@@ -326,6 +336,7 @@ def main(unused_argv):
                                                        time.gmtime()))
       if max_num_iteration > 0 and num_iteration >= max_num_iteration:
         break
+
 
 if __name__ == '__main__':
   flags.mark_flag_as_required('checkpoint_dir')
