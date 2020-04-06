@@ -22,6 +22,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import os.path
+import cv2
 import time
 import numpy as np
 from six.moves import range
@@ -180,12 +181,19 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
     semantic_prediction = np.squeeze(semantic_predictions[i])
     semantic_probs = np.squeeze(semantic_probs[i])
 
-    print("image_height:", image_height, "image_width:", image_width, "original_image.shape",
-          original_image.shape, "semantic_prediction.shape", semantic_prediction.shape)
-
-    crop_semantic_prediction = semantic_prediction
-    if not (FLAGS.min_resize_value and FLAGS.max_resize_value):
-      crop_semantic_prediction = semantic_prediction[:image_height, :image_width]
+    if FLAGS.min_resize_value or FLAGS.max_resize_value:
+      original_size = (image_width, image_height)
+      original_image = cv2.resize(original_image,
+                                  original_size,
+                                  interpolation=cv2.INTER_CUBIC)
+      semantic_prediction = cv2.resize(semantic_prediction,
+                                       original_size,
+                                       interpolation=cv2.INTER_NEAREST)
+      semantic_probs = cv2.resize(semantic_probs,
+                                  original_size,
+                                  interpolation=cv2.INTER_LINEAR)
+    else:
+      semantic_prediction = semantic_prediction[:image_height, :image_width]
 
     image_filename = ".".join(os.path.basename(image_names[i].decode("utf-8")).split(".")[:-1])
     # Save image.
@@ -195,13 +203,13 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
 
     # Save prediction.
     save_annotation.save_annotation(
-        crop_semantic_prediction, save_dir,
+        semantic_prediction, save_dir,
         _PREDICTION_FORMAT % image_filename, add_colormap=True,
         colormap_type=FLAGS.colormap_type)
 
     # vis using pyplot
     save_annotation.vis_segmentation(
-        original_image, crop_semantic_prediction, semantic_probs, save_dir,
+        original_image, semantic_prediction, semantic_probs, save_dir,
         _OVERLAY_FORMAT % image_filename,
         colormap_type=FLAGS.colormap_type,
         label_names=LABEL_NAMES)
@@ -209,11 +217,11 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
     if FLAGS.also_save_raw_predictions:
 
       if train_id_to_eval_id is not None:
-        crop_semantic_prediction = _convert_train_id_to_eval_id(
-            crop_semantic_prediction,
+        semantic_prediction = _convert_train_id_to_eval_id(
+            semantic_prediction,
             train_id_to_eval_id)
       save_annotation.save_annotation(
-          crop_semantic_prediction, raw_save_dir, image_filename,
+          semantic_prediction, raw_save_dir, image_filename,
           add_colormap=False)
       np.save('%s/%s' % (raw_save_dir, image_filename), semantic_probs)
 
