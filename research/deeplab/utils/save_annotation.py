@@ -125,7 +125,6 @@ def vis_segmentation(image,
   overlay = np.copy(image).astype(np.float32)
   num_classes = logits.shape[2]
   logits[logits < 0.01] = 0
-  a = None
   for i in range(1, num_classes):
     color_image = np.full_like(image, fill_value=colormap[i])
     soft_seg_mix += color_image * np.stack([logits[:, :, i]]*3, axis=-1)
@@ -174,5 +173,3 @@ def vis_segmentation(image,
   plt.grid('off')
   with tf.gfile.Open('%s/%s.png' % (save_dir, filename), mode='w') as f:
     plt.savefig(f)
-
-  cv2.imwrite('%s/%s.png' % (save_dir, filename.replace('overlay', 'debug')), cv2.cvtColor(a,cv2.COLOR_RGB2BGR))
