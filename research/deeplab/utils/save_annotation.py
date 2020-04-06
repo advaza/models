@@ -126,7 +126,7 @@ def vis_segmentation(image,
   num_classes = logits.shape[2]
   for i in range(1, num_classes):
     color_image = np.full_like(image, fill_value=colormap[i])
-    soft_seg_mix += (1./num_classes) * color_image * np.stack([logits[:, :, i]]*3, axis=-1)
+    soft_seg_mix += (1./(num_classes-1)) * color_image * np.stack([logits[:, :, i]]*3, axis=-1)
     overlay[seg_map==i] = (0.3 * overlay[seg_map==i] + 0.7 * color_image[seg_map==i])
 
   soft_seg_mix = soft_seg_mix.astype(np.uint8).astype(np.float32)
