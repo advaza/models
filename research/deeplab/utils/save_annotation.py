@@ -92,10 +92,10 @@ def vis_segmentation(image,
                          new_shape,
                          interpolation=cv2.INTER_NEAREST)
     if logits is not None:
-      for i in range(logits.shape[-1]):
-        logits[:,:,i] = cv2.resize(logits[:,:,i],
-                                   new_shape,
-                                   interpolation=cv2.INTER_LINEAR)
+      logits = np.stack([
+        cv2.resize(logits[:,:,i], new_shape, interpolation=cv2.INTER_LINEAR)
+         for i in range(logits.shape[-1])], axis=2)
+
 
 
   dpi = plt.rcParams['figure.dpi']
