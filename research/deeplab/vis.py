@@ -183,6 +183,9 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
     semantic_prediction = np.squeeze(semantic_predictions[i])
     semantic_probs = np.squeeze(semantic_probs[i])
 
+    print("BEFORE: original_image.shape", original_image.shape,
+          "semantic_predictions.shape", semantic_predictions.shape,
+          "semantic_probs.shape", semantic_probs.shape)
     if FLAGS.min_resize_value or FLAGS.max_resize_value:
 
       scale = (max_image_dim / max(image_height, image_width)) if \
