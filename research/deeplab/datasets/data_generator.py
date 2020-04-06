@@ -145,7 +145,8 @@ class Dataset(object):
                is_training=False,
                should_shuffle=False,
                should_repeat=False,
-               num_classes=0):
+               num_classes=0,
+               get_resized_image_shape=False):
     """Initializes the dataset.
 
     Args:
@@ -202,6 +203,7 @@ class Dataset(object):
     self.is_training = is_training
     self.should_shuffle = should_shuffle
     self.should_repeat = should_repeat
+    self.get_resized_image_shape = get_resized_image_shape
 
     if dataset_name in ['deep_fashion2'] and num_classes > 0:
         self.num_of_classes = num_classes + 1
@@ -304,7 +306,7 @@ class Dataset(object):
     if common.LABELS_CLASS in sample:
         label = sample[common.LABELS_CLASS]
 
-    original_image, image, label = input_preprocess.preprocess_image_and_label(
+    original_image, image, label, resized_shape = input_preprocess.preprocess_image_and_label(
         image=image,
         label=label,
         crop_height=self.crop_size[0],
@@ -317,13 +319,16 @@ class Dataset(object):
         scale_factor_step_size=self.scale_factor_step_size,
         ignore_label=self.ignore_label,
         is_training=self.is_training,
-        model_variant=self.model_variant)
-
+        model_variant=self.model_variant,
+        get_resized_image_shape=self.get_resized_image_shape)
     sample[common.IMAGE] = image
 
     if not self.is_training:
       # Original image is only used during visualization.
       sample[common.ORIGINAL_IMAGE] = original_image
+
+    if self.get_resized_image_shape:
+      sample[common.RESIZED_SHAPE] = resized_shape
 
     if label is not None:
       sample[common.LABEL] = label

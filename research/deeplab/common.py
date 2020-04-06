@@ -166,6 +166,7 @@ WIDTH = 'width'
 IMAGE_NAME = 'image_name'
 LABEL = 'label'
 ORIGINAL_IMAGE = 'original_image'
+RESIZED_SHAPE = 'resized_shape'
 
 # Test set name.
 TEST_SET = 'test'

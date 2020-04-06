@@ -96,8 +96,6 @@ def vis_segmentation(image,
         cv2.resize(logits[:,:,i], new_shape, interpolation=cv2.INTER_LINEAR)
          for i in range(logits.shape[-1])], axis=2)
 
-
-
   dpi = plt.rcParams['figure.dpi']
   fig_size = width * 3 / float(dpi), height / float(dpi)
   #fig, ax = plt.subplots(nrows=1, ncols=3, figsize=fig_size, sharex=True, sharey=True, squeeze=True,

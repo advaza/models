@@ -37,7 +37,8 @@ def preprocess_image_and_label(image,
                                scale_factor_step_size=0,
                                ignore_label=255,
                                is_training=True,
-                               model_variant=None):
+                               model_variant=None,
+                               get_resized_image_shape=False):
   """Preprocesses the image and label.
 
   Args:
@@ -82,6 +83,7 @@ def preprocess_image_and_label(image,
   if label is not None:
     label = tf.cast(label, tf.int32)
 
+  resized_image_shape = None
   # Resize image and label to the desired range.
   if min_resize_value or max_resize_value:
     [processed_image, label] = (
@@ -92,8 +94,8 @@ def preprocess_image_and_label(image,
             max_size=max_resize_value,
             factor=resize_factor,
             align_corners=True))
-    # The `original_image` becomes the resized image.
-    original_image = tf.identity(processed_image)
+    # Resized image shape.
+    resized_image_shape = tf.shape(processed_image)
 
   # Data augmentation by randomly scaling the inputs.
   if is_training:
@@ -136,4 +138,5 @@ def preprocess_image_and_label(image,
     processed_image, label, _ = preprocess_utils.flip_dim(
         [processed_image, label], _PROB_OF_FLIP, dim=1)
 
-  return original_image, processed_image, label
+  return original_image, processed_image, label, resized_image_shape
+

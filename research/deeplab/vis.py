@@ -186,9 +186,6 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
     if FLAGS.min_resize_value or FLAGS.max_resize_value:
       print("resizing...")
       original_size = (image_width, image_height)
-      original_image = cv2.resize(original_image,
-                                  original_size,
-                                  interpolation=cv2.INTER_CUBIC)
       semantic_prediction = cv2.resize(semantic_prediction,
                                        original_size,
                                        interpolation=cv2.INTER_NEAREST)
@@ -248,7 +245,8 @@ def main(unused_argv):
       is_training=False,
       should_shuffle=False,
       should_repeat=False,
-      num_classes=FLAGS.num_classes)
+      num_classes=FLAGS.num_classes,
+      get_resized_image_shape=True)
 
   train_id_to_eval_id = None
   if dataset.dataset_name == data_generator.get_cityscapes_dataset_name():
@@ -302,16 +300,15 @@ def main(unused_argv):
       # Reverse the resizing and padding operations performed in preprocessing.
       # First, we slice the valid regions (i.e., remove padded region) and then
       # we resize the predictions back.
-      original_image = tf.squeeze(samples[common.ORIGINAL_IMAGE])
-      original_image_shape = tf.shape(original_image)
+      resized_shape = tf.squeeze(samples[common.RESIZED_SHAPE])
       predictions = tf.slice(
           predictions,
           [0, 0, 0],
-          [1, original_image_shape[0], original_image_shape[1]])
+          [1, resized_shape[0], resized_shape[1]])
       probs = tf.slice(
           probs,
           [0, 0, 0, 0],
-          [1, original_image_shape[0], original_image_shape[1], probs.get_shape()[-1]])
+          [1, resized_shape[0], resized_shape[1], probs.get_shape()[-1]])
 
     tf.train.get_or_create_global_step()
     if FLAGS.quantize_delay_step >= 0:
