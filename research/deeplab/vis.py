@@ -148,7 +148,7 @@ def _convert_train_id_to_eval_id(prediction, train_id_to_eval_id):
 
 def _process_batch(sess, original_images, semantic_predictions, semantic_probs, image_names,
                    image_heights, image_widths, image_id_offset, save_dir,
-                   raw_save_dir, train_id_to_eval_id=None):
+                   raw_save_dir, train_id_to_eval_id=None, max_image_dim=1024):
   """Evaluates one single batch qualitatively.
   Args:
     sess: TensorFlow session.
@@ -184,14 +184,23 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
     semantic_probs = np.squeeze(semantic_probs[i])
 
     if FLAGS.min_resize_value or FLAGS.max_resize_value:
-      print("resizing...")
-      original_size = (image_width, image_height)
-      semantic_prediction = cv2.resize(semantic_prediction,
-                                       original_size,
-                                       interpolation=cv2.INTER_NEAREST)
-      semantic_probs = np.stack([
-        cv2.resize(semantic_probs[:,:,i], original_size, interpolation=cv2.INTER_LINEAR)
-         for i in range(semantic_probs.shape[-1])], axis=2)
+
+      scale = (max_image_dim / max(image_height, image_width)) if \
+        max(image_height, image_width) > max_image_dim else 1.0
+
+      new_shape = (int(image_width * scale), int(image_height * scale))
+
+      if scale != 1:
+        original_image = cv2.resize(original_image,
+                           new_shape,
+                           interpolation=cv2.INTER_AREA)
+      semantic_predictions = cv2.resize(semantic_predictions,
+                           new_shape,
+                           interpolation=cv2.INTER_NEAREST)
+      if semantic_probs is not None:
+        semantic_probs = np.stack([
+          cv2.resize(semantic_probs[:, :, i], new_shape, interpolation=cv2.INTER_LINEAR)
+          for i in range(semantic_probs.shape[-1])], axis=2)
 
     else:
       semantic_prediction = semantic_prediction[:image_height, :image_width]

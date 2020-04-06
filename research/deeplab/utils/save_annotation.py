@@ -76,25 +76,12 @@ def vis_segmentation(image,
                      filename=None,
                      colormap_type=get_dataset_colormap.get_pascal_name(),
                      label_names=None,
-                     seg_bg_color=(0,0,0),
-                     max_image_dim=1024):
+                     seg_bg_color=(0,0,0)):
   """Visualizes input image, segmentation map and overlay view."""
   # creates figure with the 3 images in original size
 
   height, width = image.shape[:2]
-  if max(height, width) > max_image_dim:
-    scale = max_image_dim / max(height, width)
-    new_shape = (int(width*scale), int(height*scale))
-    image = cv2.resize(image,
-                       new_shape,
-                       interpolation=cv2.INTER_AREA)
-    seg_map = cv2.resize(seg_map,
-                         new_shape,
-                         interpolation=cv2.INTER_NEAREST)
-    if logits is not None:
-      logits = np.stack([
-        cv2.resize(logits[:,:,i], new_shape, interpolation=cv2.INTER_LINEAR)
-         for i in range(logits.shape[-1])], axis=2)
+
 
   dpi = plt.rcParams['figure.dpi']
   fig_size = width * 3 / float(dpi), height / float(dpi)
