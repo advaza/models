@@ -139,7 +139,7 @@ def vis_segmentation(image,
   overlay = overlay.astype(np.uint8)
 
   plt.subplot(grid_spec[0])
-  plt.imshow(a, vmin=0, vmax=1)
+  plt.imshow(a/255., vmin=0, vmax=1)
   plt.axis('off')
   plt.title('soft segmentation')
 
