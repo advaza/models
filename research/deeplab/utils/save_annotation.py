@@ -18,7 +18,7 @@
 This script saves an annotation as one png image, and has the option to add
 colormap to the png image for better visualization.
 """
-
+import cv2
 import numpy as np
 import PIL.Image as img
 import tensorflow as tf
@@ -75,17 +75,44 @@ def vis_segmentation(image,
                      save_dir=None,
                      filename=None,
                      colormap_type=get_dataset_colormap.get_pascal_name(),
-                     label_names=None):
+                     label_names=None,
+                     seg_bg_color=(0,0,0),
+                     max_image_dim=1024):
   """Visualizes input image, segmentation map and overlay view."""
+  # creates figure with the 3 images in original size
+
+  height, width = image.shape[:2]
+  if max(height, width) > max_image_dim:
+    scale = max_image_dim / max(height, width)
+    new_shape = (width*scale, height*scale)
+    image = cv2.resize(image,
+                       new_shape,
+                       interpolation=cv2.INTER_CUBIC)
+    seg_map = cv2.resize(seg_map,
+                         new_shape,
+                         interpolation=cv2.INTER_NEAREST)
+    if logits is not None:
+      logits = cv2.resize(logits,
+                          new_shape,
+                          interpolation=cv2.INTER_LINEAR)
+
+  dpi = plt.rcParams['figure.dpi']
+  fig_size = width * 3 / float(dpi), height / float(dpi)
+  #fig, ax = plt.subplots(nrows=1, ncols=3, figsize=fig_size, sharex=True, sharey=True, squeeze=True,
+  #                       gridspec_kw={'wspace': 0, 'hspace': 0})
+  #title = "image: ", name
+  #fig.suptitle(title, fontsize=20)
+  #ax[0].imshow(img)
+  #ax[1].imshow(mask)
+  #ax[2].imshow(masked_img)
+
 
   colormap = get_dataset_colormap.create_label_colormap(colormap_type)
   image = image.astype(dtype=np.uint8)
-  plt.figure(figsize=(15, 5))
+
+  plt.figure(figsize=fig_size)
   grid_spec = gridspec.GridSpec(1, 4, width_ratios=[6, 6, 6, 1])
-  plt.subplot(grid_spec[0])
-  plt.imshow(image)
-  plt.axis('off')
-  plt.title('input image')
+
 
   # plt.subplot(grid_spec[1])
   # seg_image = get_dataset_colormap.label_to_color_image(
@@ -94,7 +121,7 @@ def vis_segmentation(image,
   # plt.axis('off')
   # plt.title('segmentation map')
 
-  soft_seg_mix = np.zeros_like(image, dtype=np.float32)
+  soft_seg_mix = np.full_like(image, fill_value=seg_bg_color, dtype=np.float32)
   soft_overlay = image.astype(np.float32)
   overlay = np.copy(image).astype(np.float32)
   num_classes = logits.shape[2]
@@ -108,6 +135,11 @@ def vis_segmentation(image,
   soft_overlay[inds] = 0.3 * soft_overlay[inds] + 0.7 * soft_seg_mix[inds]
   soft_overlay = soft_overlay.astype(np.uint8)
   overlay = overlay.astype(np.uint8)
+
+  plt.subplot(grid_spec[0])
+  plt.imshow(soft_seg_mix)
+  plt.axis('off')
+  plt.title('soft segmentation')
 
   plt.subplot(grid_spec[1])
   plt.imshow(soft_overlay)

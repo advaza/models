@@ -94,6 +94,8 @@ flags.DEFINE_integer('num_classes', 0,
 
 flags.DEFINE_enum('colormap_type', 'pascal', ['pascal', 'cityscapes', 'ade20k', 'deepfashion2'],
                   'Visualization colormap type.')
+flags.DEFINE_multi_integer('seg_bg_color', (0,0,0),
+                           'Background color of segmentation.')
 
 flags.DEFINE_boolean('also_save_raw_predictions', False,
                      'Also save raw predictions.')
@@ -212,7 +214,8 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
         original_image, semantic_prediction, semantic_probs, save_dir,
         _OVERLAY_FORMAT % image_filename,
         colormap_type=FLAGS.colormap_type,
-        label_names=LABEL_NAMES)
+        label_names=LABEL_NAMES,
+        seg_bg_color=FLAGS.seg_bg_color)
 
     if FLAGS.also_save_raw_predictions:
 
