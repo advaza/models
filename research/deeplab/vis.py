@@ -180,7 +180,9 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
     image_height = np.squeeze(image_heights[i])
     image_width = np.squeeze(image_widths[i])
     original_image = np.squeeze(original_images[i])
+    print("1. semantic_predictions[i].shape", semantic_predictions.shape)
     semantic_prediction = np.squeeze(semantic_predictions[i])
+    print("2. semantic_predictions[i].shape", semantic_predictions.shape)
     semantic_probs = np.squeeze(semantic_probs[i])
 
     print("BEFORE: original_image.shape", original_image.shape,
