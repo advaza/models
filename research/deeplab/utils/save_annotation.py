@@ -139,17 +139,17 @@ def vis_segmentation(image,
   overlay = overlay.astype(np.uint8)
 
   plt.subplot(grid_spec[0])
-  plt.imshow(a)
+  plt.imshow(a, vmin=0, vmax=255)
   plt.axis('off')
   plt.title('soft segmentation')
 
   plt.subplot(grid_spec[1])
-  plt.imshow(soft_overlay)
+  plt.imshow(soft_overlay, vmin=0, vmax=255)
   plt.axis('off')
   plt.title('soft segmentation overlay')
 
   plt.subplot(grid_spec[2])
-  plt.imshow(overlay)
+  plt.imshow(overlay, vmin=0, vmax=255)
   plt.axis('off')
   plt.title('segmentation overlay')
 
@@ -174,4 +174,5 @@ def vis_segmentation(image,
   plt.grid('off')
   with tf.gfile.Open('%s/%s.png' % (save_dir, filename), mode='w') as f:
     plt.savefig(f)
+
   cv2.imwrite('%s/%s.png' % (save_dir, filename + 'debug'), cv2.cvtColor(a,cv2.COLOR_RGB2BGR))
