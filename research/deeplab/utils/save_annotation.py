@@ -87,7 +87,7 @@ def vis_segmentation(image,
     new_shape = (int(width*scale), int(height*scale))
     image = cv2.resize(image,
                        new_shape,
-                       interpolation=cv2.INTER_CUBIC)
+                       interpolation=cv2.INTER_AREA)
     seg_map = cv2.resize(seg_map,
                          new_shape,
                          interpolation=cv2.INTER_NEAREST)
