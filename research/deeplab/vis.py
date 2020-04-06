@@ -180,6 +180,9 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
     semantic_prediction = np.squeeze(semantic_predictions[i])
     semantic_probs = np.squeeze(semantic_probs[i])
 
+    print("image_height:", image_height, "image_width:", image_width, "original_image.shape",
+          original_image.shape, "semantic_prediction.shape", semantic_prediction.shape)
+
     crop_semantic_prediction = semantic_prediction
     if not (FLAGS.min_resize_value and FLAGS.max_resize_value):
       crop_semantic_prediction = semantic_prediction[:image_height, :image_width]
