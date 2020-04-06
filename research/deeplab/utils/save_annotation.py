@@ -129,7 +129,7 @@ def vis_segmentation(image,
   for i in range(1, num_classes):
     color_image = np.full_like(image, fill_value=colormap[i])
     soft_seg_mix += color_image * np.stack([logits[:, :, i]]*3, axis=-1)
-    a = color_image * np.stack([logits[:, :, i]]*3, axis=-1)
+    # a = color_image * np.stack([logits[:, :, i]]*3, axis=-1)
     overlay[seg_map==i] = (0.3 * overlay[seg_map==i] + 0.7 * color_image[seg_map==i])
 
   soft_seg_mix = soft_seg_mix.astype(np.uint8).astype(np.float32)
@@ -139,17 +139,17 @@ def vis_segmentation(image,
   overlay = overlay.astype(np.uint8)
 
   plt.subplot(grid_spec[0])
-  plt.imshow(a/255., vmin=0, vmax=1)
+  plt.imshow(soft_seg_mix/255., vmin=0, vmax=1)
   plt.axis('off')
   plt.title('soft segmentation')
 
   plt.subplot(grid_spec[1])
-  plt.imshow(soft_overlay, vmin=0, vmax=255)
+  plt.imshow(soft_overlay)
   plt.axis('off')
   plt.title('soft segmentation overlay')
 
   plt.subplot(grid_spec[2])
-  plt.imshow(overlay, vmin=0, vmax=255)
+  plt.imshow(overlay)
   plt.axis('off')
   plt.title('segmentation overlay')
 
