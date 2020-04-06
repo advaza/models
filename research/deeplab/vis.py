@@ -180,14 +180,9 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
     image_height = np.squeeze(image_heights[i])
     image_width = np.squeeze(image_widths[i])
     original_image = np.squeeze(original_images[i])
-    print("1. semantic_predictions[i].shape", semantic_predictions.shape)
     semantic_prediction = np.squeeze(semantic_predictions[i])
-    print("2. semantic_predictions[i].shape", semantic_predictions.shape)
     semantic_probs = np.squeeze(semantic_probs[i])
 
-    print("BEFORE: original_image.shape", original_image.shape,
-          "semantic_predictions.shape", semantic_predictions.shape,
-          "semantic_probs.shape", semantic_probs.shape)
     if FLAGS.min_resize_value or FLAGS.max_resize_value:
 
       scale = (max_image_dim / max(image_height, image_width)) if \
@@ -199,17 +194,13 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
         original_image = cv2.resize(original_image,
                            new_shape,
                            interpolation=cv2.INTER_AREA)
-      semantic_predictions = cv2.resize(semantic_predictions,
+        semantic_prediction = cv2.resize(semantic_prediction,
                            new_shape,
                            interpolation=cv2.INTER_NEAREST)
       if semantic_probs is not None:
         semantic_probs = np.stack([
           cv2.resize(semantic_probs[:, :, i], new_shape, interpolation=cv2.INTER_LINEAR)
           for i in range(semantic_probs.shape[-1])], axis=2)
-      print("original_image.shape", original_image.shape,
-            "semantic_predictions.shape", semantic_predictions.shape,
-            "semantic_probs.shape", semantic_probs.shape)
-
 
     else:
       semantic_prediction = semantic_prediction[:image_height, :image_width]
