@@ -192,10 +192,12 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
       semantic_prediction = cv2.resize(semantic_prediction,
                                        original_size,
                                        interpolation=cv2.INTER_NEAREST)
-      for i in range(semantic_probs.shape[-1]):
-        semantic_probs[:,:,i] = cv2.resize(semantic_probs[:,:,i],
-                                    original_size,
-                                    interpolation=cv2.INTER_LINEAR)
+
+      semantic_probs = np.stack([
+        cv2.resize(semantic_probs[:,:,i], original_size, interpolation=cv2.INTER_LINEAR)
+         for i in range(semantic_probs.shape[-1])], axis=2)
+
+
     else:
       semantic_prediction = semantic_prediction[:image_height, :image_width]
 
