@@ -84,7 +84,7 @@ def vis_segmentation(image,
   height, width = image.shape[:2]
   if max(height, width) > max_image_dim:
     scale = max_image_dim / max(height, width)
-    new_shape = (width*scale, height*scale)
+    new_shape = (int(width*scale), int(height*scale))
     image = cv2.resize(image,
                        new_shape,
                        interpolation=cv2.INTER_CUBIC)
@@ -92,9 +92,11 @@ def vis_segmentation(image,
                          new_shape,
                          interpolation=cv2.INTER_NEAREST)
     if logits is not None:
-      logits = cv2.resize(logits,
-                          new_shape,
-                          interpolation=cv2.INTER_LINEAR)
+      for i in range(logits.shape[-1]):
+        logits[:,:,i] = cv2.resize(logits[:,:,i],
+                                   new_shape,
+                                   interpolation=cv2.INTER_LINEAR)
+
 
   dpi = plt.rcParams['figure.dpi']
   fig_size = width * 3 / float(dpi), height / float(dpi)

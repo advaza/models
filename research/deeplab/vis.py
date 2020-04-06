@@ -184,6 +184,7 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
     semantic_probs = np.squeeze(semantic_probs[i])
 
     if FLAGS.min_resize_value or FLAGS.max_resize_value:
+      print("resizing...")
       original_size = (image_width, image_height)
       original_image = cv2.resize(original_image,
                                   original_size,
@@ -191,9 +192,10 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
       semantic_prediction = cv2.resize(semantic_prediction,
                                        original_size,
                                        interpolation=cv2.INTER_NEAREST)
-      semantic_probs = cv2.resize(semantic_probs,
-                                  original_size,
-                                  interpolation=cv2.INTER_LINEAR)
+      for i in range(semantic_probs.shape[-1]):
+        semantic_probs[:,:,i] = cv2.resize(semantic_probs[:,:,i],
+                                    original_size,
+                                    interpolation=cv2.INTER_LINEAR)
     else:
       semantic_prediction = semantic_prediction[:image_height, :image_width]
 
