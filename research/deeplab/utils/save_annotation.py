@@ -81,7 +81,7 @@ def vis_segmentation(image,
   # creates figure with the 3 images in original size
 
   height, width = image.shape[:2]
-
+  print("image.shape:", image.shape, seg_map.shape, logits.shape)
 
   dpi = plt.rcParams['figure.dpi']
   fig_size = width * 3 / float(dpi), height / float(dpi)
