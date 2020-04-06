@@ -174,3 +174,5 @@ def vis_segmentation(image,
   plt.grid('off')
   with tf.gfile.Open('%s/%s.png' % (save_dir, filename), mode='w') as f:
     plt.savefig(f)
+
+  cv2.imwrite('%s/%s.png' % (save_dir, filename.replace('overlay', 'debug')), cv2.cvtColor(a,cv2.COLOR_RGB2BGR))
