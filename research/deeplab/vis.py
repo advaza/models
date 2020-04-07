@@ -104,6 +104,10 @@ flags.DEFINE_integer('max_number_of_iterations', 0,
                      'Maximum number of visualization iterations. Will loop '
                      'indefinitely upon nonpositive values.')
 
+flags.DEFINE_list('label_names', None,
+                  'List of labels show on visualisation. Should be given as comma separated string'
+                  ' e.g., background,bottom,top.')
+
 # The folder where semantic segmentation predictions are saved.
 _SEMANTIC_PREDICTION_SAVE_FOLDER = 'segmentation_results'
 
@@ -172,10 +176,6 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
 
   num_image = semantic_predictions.shape[0]
 
-  LABEL_NAMES = np.asarray([
-      'background', 'bottom', 'top',
-  ])
-
   for i in range(num_image):
     image_height = np.squeeze(image_heights[i])
     image_width = np.squeeze(image_widths[i])
@@ -194,9 +194,9 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
         original_image = cv2.resize(original_image,
                            new_shape,
                            interpolation=cv2.INTER_AREA)
-        semantic_prediction = cv2.resize(semantic_prediction,
-                           new_shape,
-                           interpolation=cv2.INTER_NEAREST)
+      semantic_prediction = cv2.resize(semantic_prediction,
+                         new_shape,
+                         interpolation=cv2.INTER_NEAREST)
       if semantic_probs is not None:
         semantic_probs = np.stack([
           cv2.resize(semantic_probs[:, :, i], new_shape, interpolation=cv2.INTER_LINEAR)
@@ -222,7 +222,7 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
         original_image, semantic_prediction, semantic_probs, save_dir,
         _OVERLAY_FORMAT % image_filename,
         colormap_type=FLAGS.colormap_type,
-        label_names=LABEL_NAMES,
+        label_names=np.asarray(FLAGS.label_names),
         seg_bg_color=FLAGS.seg_bg_color)
 
     if FLAGS.also_save_raw_predictions:
