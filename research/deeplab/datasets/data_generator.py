@@ -79,6 +79,7 @@ _CITYSCAPES_INFORMATION = DatasetDescriptor(
                      'test_fine': 1525},
     num_classes=19,
     ignore_label=255,
+    label_names=None,
 )
 
 _PASCAL_VOC_SEG_INFORMATION = DatasetDescriptor(
@@ -90,6 +91,7 @@ _PASCAL_VOC_SEG_INFORMATION = DatasetDescriptor(
     },
     num_classes=21,
     ignore_label=255,
+label_names=None,
 )
 
 _ADE20K_INFORMATION = DatasetDescriptor(
@@ -99,6 +101,7 @@ _ADE20K_INFORMATION = DatasetDescriptor(
     },
     num_classes=151,
     ignore_label=0,
+  label_names=None,
 )
 
 _DEEP_FASHION2_INFORMATION = DatasetDescriptor(
