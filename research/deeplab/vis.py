@@ -152,7 +152,7 @@ def _convert_train_id_to_eval_id(prediction, train_id_to_eval_id):
 
 def _process_batch(sess, original_images, semantic_predictions, semantic_probs, image_names,
                    image_heights, image_widths, image_id_offset, save_dir,
-                   raw_save_dir, train_id_to_eval_id=None, max_image_dim=1024):
+                   raw_save_dir, train_id_to_eval_id=None, max_image_dim=1024, label_names=None):
   """Evaluates one single batch qualitatively.
   Args:
     sess: TensorFlow session.
@@ -222,7 +222,7 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
         original_image, semantic_prediction, semantic_probs, save_dir,
         _OVERLAY_FORMAT % image_filename,
         colormap_type=FLAGS.colormap_type,
-        label_names=np.asarray(FLAGS.label_names),
+        label_names=label_names,
         seg_bg_color=FLAGS.seg_bg_color)
 
     if FLAGS.also_save_raw_predictions:
@@ -319,6 +319,13 @@ def main(unused_argv):
           [0, 0, 0, 0],
           [1, resized_shape[0], resized_shape[1], probs.get_shape()[-1]])
 
+    if FLAGS.label_names:
+      label_names = FLAGS.label_names
+    elif dataset.label_names:
+      label_names = dataset.label_names
+    else:
+      label_names = None
+
     tf.train.get_or_create_global_step()
     if FLAGS.quantize_delay_step >= 0:
       contrib_quantize.create_eval_graph()
@@ -357,7 +364,8 @@ def main(unused_argv):
                          image_id_offset=image_id_offset,
                          save_dir=save_dir,
                          raw_save_dir=raw_save_dir,
-                         train_id_to_eval_id=train_id_to_eval_id)
+                         train_id_to_eval_id=train_id_to_eval_id,
+                         label_names=label_names)
           image_id_offset += FLAGS.vis_batch_size
           batch += 1
 

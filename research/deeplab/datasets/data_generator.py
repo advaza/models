@@ -67,6 +67,7 @@ DatasetDescriptor = collections.namedtuple(
                         # the PASCAL VOC 2012 dataset. Thus, we set
                         # num_classes=21.
         'ignore_label',  # Ignore label value.
+        'label_names', # label names for visualisation
     ])
 
 _CITYSCAPES_INFORMATION = DatasetDescriptor(
@@ -108,6 +109,22 @@ _DEEP_FASHION2_INFORMATION = DatasetDescriptor(
     },
     num_classes=14,
     ignore_label=255,
+    label_names=[
+      'background',
+      'skirt',
+      'shorts',
+      'trousers',
+      'sling',
+      'vest',
+      'short_sleeve_top',
+      'long_sleeve_top',
+      'sling_dress',
+      'vest_dress',
+      'short_sleeve_dress',
+      'long_sleeve_dress'
+      'short_sleeve_outwear',
+      'long_sleeve_outwear',
+    ]
 )
 
 _DATASETS_INFORMATION = {
@@ -211,6 +228,7 @@ class Dataset(object):
         self.num_of_classes = _DATASETS_INFORMATION[self.dataset_name].num_classes
 
     self.ignore_label = _DATASETS_INFORMATION[self.dataset_name].ignore_label
+    self.label_names = _DATASETS_INFORMATION[self.dataset_name].label_names
 
   def _parse_function(self, example_proto):
     """Function to parse the example proto.

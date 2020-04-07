@@ -79,7 +79,7 @@ def vis_segmentation(image,
                      seg_bg_color=(0,0,0)):
   """Visualizes input image, segmentation map and overlay view."""
   # creates figure with the 3 images in original size
-
+  label_names = np.asarray(label_names)
   height, width = image.shape[:2]
   print("image.shape:", image.shape, seg_map.shape, logits.shape)
 
