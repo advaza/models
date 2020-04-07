@@ -124,7 +124,7 @@ _DEEP_FASHION2_INFORMATION = DatasetDescriptor(
       'sling_dress',
       'vest_dress',
       'short_sleeve_dress',
-      'long_sleeve_dress'
+      'long_sleeve_dress',
       'short_sleeve_outwear',
       'long_sleeve_outwear',
     ]
