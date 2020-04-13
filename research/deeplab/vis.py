@@ -35,6 +35,8 @@ from deeplab import model
 from deeplab.datasets import data_generator
 from deeplab.utils import save_annotation
 
+from visualizer.visualize import vis_segmentation
+
 flags = tf.app.flags
 
 FLAGS = flags.FLAGS
@@ -100,6 +102,9 @@ flags.DEFINE_multi_integer('seg_bg_color', (0,0,0),
 flags.DEFINE_boolean('also_save_raw_predictions', False,
                      'Also save raw predictions.')
 
+flags.DEFINE_boolean('also_save_images_and_masks', False,
+                     'Also save images and masks.')
+
 flags.DEFINE_integer('max_number_of_iterations', 0,
                      'Maximum number of visualization iterations. Will loop '
                      'indefinitely upon nonpositive values.')
@@ -109,10 +114,12 @@ flags.DEFINE_list('label_names', None,
                   ' e.g., background,bottom,top.')
 
 # The folder where semantic segmentation predictions are saved.
-_SEMANTIC_PREDICTION_SAVE_FOLDER = 'segmentation_results'
+_SEMANTIC_PREDICTION_SAVE_FOLDER = 'images_masks_results'
 
 # The folder where raw semantic segmentation predictions are saved.
 _RAW_SEMANTIC_PREDICTION_SAVE_FOLDER = 'raw_segmentation_results'
+
+_OVERLAY_SAVE_FOLDER = 'segmentation_results'
 
 # The format to save image.
 _IMAGE_FORMAT = '%s_image'
@@ -151,7 +158,7 @@ def _convert_train_id_to_eval_id(prediction, train_id_to_eval_id):
 
 
 def _process_batch(sess, original_images, semantic_predictions, semantic_probs, image_names,
-                   image_heights, image_widths, image_id_offset, save_dir,
+                   image_heights, image_widths, image_id_offset, save_dir, overlay_dir,
                    raw_save_dir, train_id_to_eval_id=None, max_image_dim=1024, label_names=None):
   """Evaluates one single batch qualitatively.
   Args:
@@ -194,9 +201,9 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
         original_image = cv2.resize(original_image,
                            new_shape,
                            interpolation=cv2.INTER_AREA)
-      semantic_prediction = cv2.resize(semantic_prediction,
-                         new_shape,
-                         interpolation=cv2.INTER_NEAREST)
+        semantic_prediction = cv2.resize(semantic_prediction,
+                           new_shape,
+                           interpolation=cv2.INTER_NEAREST)
       if semantic_probs is not None:
         semantic_probs = np.stack([
           cv2.resize(semantic_probs[:, :, i], new_shape, interpolation=cv2.INTER_LINEAR)
@@ -206,24 +213,38 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
       semantic_prediction = semantic_prediction[:image_height, :image_width]
 
     image_filename = ".".join(os.path.basename(image_names[i].decode("utf-8")).split(".")[:-1])
-    # Save image.
-    save_annotation.save_annotation(
-        original_image, save_dir, _IMAGE_FORMAT % image_filename,
-        add_colormap=False)
+    if FLAGS.also_save_images_and_masks:
 
-    # Save prediction.
-    save_annotation.save_annotation(
-        semantic_prediction, save_dir,
-        _PREDICTION_FORMAT % image_filename, add_colormap=True,
-        colormap_type=FLAGS.colormap_type)
+      # Save image.
+      save_annotation.save_annotation(
+          original_image, save_dir, _IMAGE_FORMAT % image_filename,
+          add_colormap=False)
+
+      # Save prediction.
+      save_annotation.save_annotation(
+          semantic_prediction, save_dir,
+          _PREDICTION_FORMAT % image_filename, add_colormap=True,
+          colormap_type=FLAGS.colormap_type)
 
     # vis using pyplot
-    save_annotation.vis_segmentation(
-        original_image, semantic_prediction, semantic_probs, save_dir,
-        _OVERLAY_FORMAT % image_filename,
-        colormap_type=FLAGS.colormap_type,
-        label_names=label_names,
-        seg_bg_color=FLAGS.seg_bg_color)
+    vis_segmentation(original_image,
+                     seg_map=semantic_prediction,
+                     logits=semantic_probs,
+                     save_dir=save_dir,
+                     filename=_OVERLAY_FORMAT % image_filename,
+                     colormap=None,
+                     colormap_type=FLAGS.colormap_type,
+                     label_names=label_names,
+                     seg_bg_color=FLAGS.seg_bg_color,
+                     show_plot=False,
+                     max_image_dim=1024,
+                     background_class=True)
+    # save_annotation.vis_segmentation(
+    #     original_image, semantic_prediction, semantic_probs, save_dir,
+    #     _OVERLAY_FORMAT % image_filename,
+    #     colormap_type=FLAGS.colormap_type,
+    #     label_names=label_names,
+    #     seg_bg_color=FLAGS.seg_bg_color)
 
     if FLAGS.also_save_raw_predictions:
 
@@ -269,6 +290,10 @@ def main(unused_argv):
   raw_save_dir = os.path.join(
       FLAGS.vis_logdir, _RAW_SEMANTIC_PREDICTION_SAVE_FOLDER)
   tf.gfile.MakeDirs(raw_save_dir)
+  overlay_dir = os.path.join(
+    FLAGS.vis_logdir, _OVERLAY_SAVE_FOLDER)
+  tf.gfile.MakeDirs(overlay_dir)
+
 
   tf.logging.info('Visualizing on %s set', FLAGS.vis_split)
 
@@ -363,6 +388,7 @@ def main(unused_argv):
                          image_widths=samples[common.WIDTH],
                          image_id_offset=image_id_offset,
                          save_dir=save_dir,
+                         overlay_dir=overlay_dir,
                          raw_save_dir=raw_save_dir,
                          train_id_to_eval_id=train_id_to_eval_id,
                          label_names=label_names)
