@@ -70,7 +70,7 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_integer('num_shards', 4, 'Number of output tfrecords.')
 
 
-def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
+def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards, image_format='jpg'):
   """Converts a generic image mask dataset into into tfrecord format.
 
   Args:
@@ -82,8 +82,8 @@ def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
     RuntimeError: If loaded image and label have different shape.
   """
 
-  img_names = tf.gfile.Glob(os.path.join(dataset_dir, '*.jpg')) +  \
-              tf.gfile.Glob(os.path.join(dataset_dir, '*.png'))
+  img_names = tf.gfile.Glob(os.path.join(dataset_dir, '*.' + image_format))
+
   if dataset_split == 'train':
       random.shuffle(img_names)
 
@@ -100,7 +100,7 @@ def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
   num_images = len(img_names)
   num_per_shard = int(math.ceil(num_images / num_shards))
 
-  image_reader = build_data.ImageReader('jpeg', channels=3)
+  image_reader = build_data.ImageReader(image_format, channels=3)
 
   for shard_id in range(num_shards):
     output_filename = os.path.join(
@@ -142,16 +142,17 @@ def main(unused_argv):
           'train',
           FLAGS.train_image_folder,
           FLAGS.train_image_label_folder,
-          num_shards=FLAGS.num_shards
+          num_shards=FLAGS.num_shards,
+          image_format=FLAGS.image_format,
       )
 
   if FLAGS.val_image_folder and FLAGS.val_image_label_folder:
     _convert_dataset('val', FLAGS.val_image_folder, FLAGS.val_image_label_folder,
-                     num_shards=FLAGS.num_shards)
+                     num_shards=FLAGS.num_shards, image_format=FLAGS.image_format,)
 
   if FLAGS.test_image_folder:
       _convert_dataset('test', FLAGS.test_image_folder, FLAGS.test_image_label_folder,
-                       num_shards=FLAGS.num_shards)
+                       num_shards=FLAGS.num_shards, image_format=FLAGS.image_format,)
 
 
 if __name__ == '__main__':
