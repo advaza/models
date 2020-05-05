@@ -244,7 +244,7 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  flags.mark_flag_as_required('checkpoint_dir')
+  flags.mark_flag_as_required('checkpoint_path')
   flags.mark_flag_as_required('eval_logdir')
-  flags.mark_flag_as_required('dataset_path')
+  flags.mark_flag_as_required('dataset_dir')
   tf.app.run()
