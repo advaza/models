@@ -194,7 +194,7 @@ def main(unused_argv):
      metrics_to_updates) = contrib_metrics.aggregate_metric_map(metric_map)
 
     session_creator = monitored_session.ChiefSessionCreator(
-      checkpoint_filename_with_path=flags.checkpoint_path)
+      checkpoint_filename_with_path=FLAGS.checkpoint_path)
 
     with monitored_session.MonitoredSession(
             session_creator=session_creator) as session:
