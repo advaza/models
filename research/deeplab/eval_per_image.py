@@ -200,12 +200,10 @@ def main(unused_argv):
             session_creator=session_creator) as session:
 
       while not session.should_stop():
-        image_name = session.run(samples[common.IMAGE_NAME])
+        metrics_results, image_name = session.run([metrics_to_values, samples[common.IMAGE_NAME]])
         print("image name:%s" % image_name.decode("utf-8"))
-        for metric_name, metric_value in six.iteritems(metrics_to_values):
-          res = session.run(metric_value)
-          print("%s:" % metric_name, res)
-
+        for metric_name, metric_res in six.iteritems(metrics_results):
+          print("%s:" % metric_name, metric_res)
 
 
 '''
