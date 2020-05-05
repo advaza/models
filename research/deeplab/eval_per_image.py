@@ -202,12 +202,12 @@ def main(unused_argv):
       while not session.should_stop():
         metrics_results_batch, image_name_batch, labels_batch = session.run(
           [metrics_to_values, samples[common.IMAGE_NAME], labels])
-        for metrics_results, image_name, label in zip(metrics_results_batch, image_name_batch, labels_batch):
+        for image_name, label in zip(image_name_batch, labels_batch):
           label = np.array(label)
           print("lable.shape", label.shape, "label unique:", np.unique(label))
-          print("image name:%s" % image_name)
-          for metric_name, metric_res in six.iteritems(metrics_results):
-            print("%s:" % metric_name, metric_res)
+          # print("image name:%s" % image_name.decode("utf-8"))
+          # for metric_name, metric_res in six.iteritems(metrics_results):
+          #   print("%s:" % metric_name, metric_res)
 
 
 '''
