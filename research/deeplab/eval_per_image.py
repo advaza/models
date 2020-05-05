@@ -201,7 +201,7 @@ def main(unused_argv):
 
       while not session.should_stop():
         metrics_results_batch, image_name_batch, labels_batch = session.run(
-          [metrics_to_values, samples[common.IMAGE_NAME], labels])
+          [metrics_to_values, samples[common.IMAGE_NAME], samples[common.LABEL]])
         for image_name, label in zip(image_name_batch, labels_batch):
           print("label type:", type(label))
           label = np.array(label)
