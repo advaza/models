@@ -204,7 +204,7 @@ def main(unused_argv):
           [metrics_to_values, samples[common.IMAGE_NAME], labels])
         for image_name, label in zip(image_name_batch, labels_batch):
           label = np.array(label)
-          print("label type:", type(label), ""lable.shape", label.shape, "label unique:", np.unique(label))
+          print("label type:", type(label), "lable.shape", label.shape, "label unique:", np.unique(label))
           # print("image name:%s" % image_name.decode("utf-8"))
           # for metric_name, metric_res in six.iteritems(metrics_results):
           #   print("%s:" % metric_name, metric_res)
