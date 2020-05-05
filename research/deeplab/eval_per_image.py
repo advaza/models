@@ -200,10 +200,14 @@ def main(unused_argv):
             session_creator=session_creator) as session:
 
       while not session.should_stop():
-        metrics_results, image_name = session.run([metrics_to_values, samples[common.IMAGE_NAME]])
-        print("image name:%s" % image_name)
-        for metric_name, metric_res in six.iteritems(metrics_results):
-          print("%s:" % metric_name, metric_res)
+        metrics_results_batch, image_name_batch, labels_batch = session.run(
+          [metrics_to_values, samples[common.IMAGE_NAME], labels])
+        for metrics_results, image_name, label in zip(metrics_results_batch, metrics_results_batch, labels_batch):
+          label = np.array(label)
+          print("lable.shape", label.shape, "label unique:", np.unique(label))
+          print("image name:%s" % image_name)
+          for metric_name, metric_res in six.iteritems(metrics_results):
+            print("%s:" % metric_name, metric_res)
 
 
 '''
