@@ -201,7 +201,7 @@ def main(unused_argv):
 
       while not session.should_stop():
         metrics_results, image_name = session.run([metrics_to_values, samples[common.IMAGE_NAME]])
-        print("image name:%s" % image_name.decode("utf-8"))
+        print("image name:%s" % image_name)
         for metric_name, metric_res in six.iteritems(metrics_results):
           print("%s:" % metric_name, metric_res)
 
