@@ -203,6 +203,7 @@ def main(unused_argv):
         metrics_results_batch, image_name_batch, labels_batch = session.run(
           [metrics_to_values, samples[common.IMAGE_NAME], labels])
         for image_name, label in zip(image_name_batch, labels_batch):
+          print("label type:", type(label))
           label = np.array(label)
           print("label type:", type(label), "lable.shape", label.shape, "label unique:", np.unique(label))
           # print("image name:%s" % image_name.decode("utf-8"))
