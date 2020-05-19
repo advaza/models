@@ -113,6 +113,9 @@ flags.DEFINE_bool("save_labels", False, "save labels if true, default False")
 flags.DEFINE_bool("save_weights", False, "save weights if true, default False")
 flags.DEFINE_bool("save_images", False, "save original images if true, default False")
 
+# dataset name
+flags.DEFINE_bool("dataset_name", "", "dataset name for log file and yaml file naming")
+
 
 def assert_path(path):
     if os.path.exists(path):
@@ -221,10 +224,11 @@ def main(unused_argv):
         )
 
         # create the folders for saving the data:
-        pred_path = os.path.join(FLAGS.save_path, "predictions")
-        labels_path = os.path.join(FLAGS.save_path, "labels")
-        weights_path = os.path.join(FLAGS.save_path, "weights")
-        images_path = os.path.join(FLAGS.save_path, "original_images")
+        if FLAGS.save_path:
+            pred_path = os.path.join(FLAGS.save_path, "predictions")
+            labels_path = os.path.join(FLAGS.save_path, "labels")
+            weights_path = os.path.join(FLAGS.save_path, "weights")
+            images_path = os.path.join(FLAGS.save_path, "original_images")
 
         if FLAGS.save_predictions:
             assert_path(pred_path)
@@ -261,7 +265,9 @@ def main(unused_argv):
                 # creates log file (info about process and calculations)
                 # and yaml file (output information)
 
-                yaml_file_path = "/cnvrg/output/mhp_results.yaml"
+                log_file_path = "/cnvrg/output/%s_log.txt" % FLAGS.dataset_name  # TODO add flag
+                yaml_file_path = "/cnvrg/output/%s_results.yaml" % FLAGS.dataset_name  # TODO add flag
+
                 if os.path.exists(yaml_file_path):
                     yaml_file = open(yaml_file_path)
                     yaml_data = yaml.load(yaml_file, Loader=yaml.FullLoader)
@@ -269,8 +275,8 @@ def main(unused_argv):
                 else:
                     yaml_data = None
 
-                logfile = open("/cnvrg/output/mhp_log.txt", "a+")
-                with open("/cnvrg/output/mhp_results.yaml", "a+") as yaml_file:
+                logfile = open(log_file_path, "a+")
+                with open(yaml_file_path, "a+") as yaml_file:
                     image_data_dict = {}
 
                     # get original image path
@@ -294,7 +300,7 @@ def main(unused_argv):
 
                         # save images
                         if FLAGS.save_path:
-                            n_im = image.reshape((513, 513))
+                            n_im = image.reshape((513, 513)) #TODO - get size
                             n_w = w.reshape((513, 513))
                             n_label = label.reshape((513, 513)) * n_w
                             n_pred = pred.reshape((513, 513)) * n_w
@@ -328,7 +334,7 @@ def main(unused_argv):
 
                             c_label = 1 * (label == c)
                             c_pred = 1 * (pred == c)
-                            c_m = confusion_matrix(c_label, c_pred, sample_weight=weights).ravel()
+                            c_m = confusion_matrix(c_label, c_pred, sample_weight=w).ravel()
 
                             if len(c_m) < 4:  # only if all 0 or all 1
                                 tp = tn = fp = fn = 0
