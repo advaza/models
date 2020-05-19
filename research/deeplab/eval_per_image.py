@@ -114,7 +114,7 @@ flags.DEFINE_bool("save_weights", False, "save weights if true, default False")
 flags.DEFINE_bool("save_images", False, "save original images if true, default False")
 
 # dataset name
-flags.DEFINE_bool("dataset_name", "", "dataset name for log file and yaml file naming")
+flags.DEFINE_string("dataset_name", "", "dataset name for log file and yaml file naming")
 
 
 def assert_path(path):
