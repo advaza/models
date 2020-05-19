@@ -104,12 +104,14 @@ flags.DEFINE_integer(
     "Maximum number of eval iterations. Will loop " "indefinitely upon nonpositive values.",
 )
 
-# extra
-flags.DEFINE_string("save_path", None, "path for saving images of predictions, labels and weights")
-flags.DEFINE_bool("save_predictions", True, "save predictions if true, default True")
-flags.DEFINE_bool("save_labels", True, "save labels if true, default True")
-flags.DEFINE_bool("save_weights", True, "save weights if true, default True")
-flags.DEFINE_bool("save_images", True, "save original images if true, default True")
+# extra - save data
+flags.DEFINE_string(
+    "save_path", None, "path for saving images of predictions, labels and weights, default None"
+)
+flags.DEFINE_bool("save_predictions", False, "save predictions if true, default False")
+flags.DEFINE_bool("save_labels", False, "save labels if true, default False")
+flags.DEFINE_bool("save_weights", False, "save weights if true, default False")
+flags.DEFINE_bool("save_images", False, "save original images if true, default False")
 
 
 def assert_path(path):
