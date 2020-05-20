@@ -83,11 +83,12 @@ def load_eval_yaml(path, num_classes):
             m_iou.append(mean_iou)
             for c, arr in enumerate(class_arr):
                 cat = "class_" + str(c) + "_iou"
-                c_data = data[cat]
-                if c_data != "not in image" and c_data != "not in prediction":
-                    c_data = float(c_data)
-                    if not np.isnan(c_data):
-                        arr.append(c_data)
+                if cat in data.keys():
+                    c_data = data[cat]
+                    if c_data != "not in image" and c_data != "not in prediction":
+                        c_data = float(c_data)
+                        if not np.isnan(c_data):
+                            arr.append(c_data)
 
         for c, arr in enumerate(class_arr):
             class_arr[c] = np.array(arr)

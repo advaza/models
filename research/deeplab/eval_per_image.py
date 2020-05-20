@@ -230,6 +230,7 @@ def main(unused_argv):
             weights_path = os.path.join(FLAGS.save_path, "weights")
             images_path = os.path.join(FLAGS.save_path, "original_images")
 
+        # assert paths exist
         if FLAGS.save_predictions:
             assert_path(pred_path)
         if FLAGS.save_labels:
@@ -239,44 +240,45 @@ def main(unused_argv):
         if FLAGS.save_images:
             assert_path(images_path)
 
-        with monitored_session.MonitoredSession(session_creator=session_creator) as session:
+        # open the results yaml - if exists
+        yaml_file_path = "/cnvrg/output/%s_results.yaml" % FLAGS.dataset_name
 
-            while not session.should_stop():
-                (
-                    metrics_updates_batch,
-                    metrics_results_batch,
-                    image_name_batch,
-                    images_batch,
-                    predictions_batch,
-                    labels_batch,
-                    weights_batch,
-                ) = session.run(
-                    [
-                        metrics_to_updates,
-                        metrics_to_values,
-                        samples[common.IMAGE_NAME],
-                        samples[common.IMAGE],
-                        predictions,
-                        labels,
-                        weights,
-                    ]
-                )
+        if os.path.exists(yaml_file_path):
+            yaml_file = open(yaml_file_path)
+            yaml_data = yaml.load(yaml_file, Loader=yaml.FullLoader)
+            yaml_file.close()
+        else:
+            yaml_data = None
 
-                # creates log file (info about process and calculations)
-                # and yaml file (output information)
+        # open log file (info about process and calculations)
+        log_file_path = "/cnvrg/output/%s_log.txt" % FLAGS.dataset_name
+        logfile = open(log_file_path, "a+")
 
-                log_file_path = "/cnvrg/output/%s_log.txt" % FLAGS.dataset_name  # TODO add flag
-                yaml_file_path = "/cnvrg/output/%s_results.yaml" % FLAGS.dataset_name  # TODO add flag
+        with open(yaml_file_path, "a+") as yaml_file:
+            with monitored_session.MonitoredSession(session_creator=session_creator) as session:
 
-                if os.path.exists(yaml_file_path):
-                    yaml_file = open(yaml_file_path)
-                    yaml_data = yaml.load(yaml_file, Loader=yaml.FullLoader)
-                    yaml_file.close()
-                else:
-                    yaml_data = None
+                while not session.should_stop():
+                    (
+                        metrics_updates_batch,
+                        metrics_results_batch,
+                        image_name_batch,
+                        # images_batch,
+                        predictions_batch,
+                        labels_batch,
+                        weights_batch,
+                    ) = session.run(
+                        [
+                            metrics_to_updates,
+                            metrics_to_values,
+                            samples[common.IMAGE_NAME],
+                            # samples[common.IMAGE],
+                            predictions,
+                            labels,
+                            weights,
+                        ]
+                    )
 
-                logfile = open(log_file_path, "a+")
-                with open(yaml_file_path, "a+") as yaml_file:
+                    # dictionary for image data to save in yaml file
                     image_data_dict = {}
 
                     # get original image path
@@ -293,14 +295,14 @@ def main(unused_argv):
                         logfile.writelines(["image name:%s" % image_name, "\n"])
                         image_data_dict["path"] = image_path
 
-                        image = images_batch
+                        # image = images_batch
                         label = labels_batch
                         w = np.array(weights_batch, dtype=np.int32)
                         pred = predictions_batch
 
                         # save images
                         if FLAGS.save_path:
-                            n_im = image.reshape((513, 513)) #TODO - get size
+                            # n_im = image.reshape((513, 513)) #TODO - get size
                             n_w = w.reshape((513, 513))
                             n_label = label.reshape((513, 513)) * n_w
                             n_pred = pred.reshape((513, 513)) * n_w
@@ -313,8 +315,8 @@ def main(unused_argv):
                                 imsave(os.path.join(labels_path, new_name), n_label)
                             if FLAGS.save_weights:
                                 imsave(os.path.join(weights_path, "weights", new_name), n_w)
-                            if FLAGS.save_images:
-                                imsave(os.path.join(image_path, "original_images", new_name), n_im)
+                            # if FLAGS.save_images:
+                            #     imsave(os.path.join(image_path, "original_images", new_name), n_im)
 
                         classes = np.arange(FLAGS.num_classes) + 1
                         all_iou = []  # for calculation mean iou for image
@@ -373,13 +375,13 @@ def main(unused_argv):
                             logfile.writelines(lines)
 
                             c_m_data = [float(tn_p), float(fp_p), float(fn_p), float(tp_p)]
-                            image_data_dict["confusion_mat_" + str(c)] = c_m_data
-                            image_data_dict["class_" + str(c) + "_iou"] = float(iou)
+                            image_data_dict["confusion_mat_%s" % c] = c_m_data
+                            image_data_dict["class_%s_iou" % c] = float(iou)
 
                         # mean iou calc
                         mean_iou = np.mean(all_iou)
                         image_data_dict["mean_iou"] = float(mean_iou)
-                        lines = ["mean_iou: " + str(mean_iou) + "\n"]
+                        lines = ["mean_iou: %s\n" % mean_iou]
 
                         # add the calc (mean for all images so far) from original eval code to log file
                         for m, v in metrics_results_batch.items():
@@ -389,8 +391,8 @@ def main(unused_argv):
                         # update yaml file with image info
                         yaml.dump({image_name: image_data_dict}, yaml_file)
 
-                    yaml_file.close()
-                    logfile.close()
+        yaml_file.close()
+        logfile.close()
 
                 # #             print(weights_batch.shape)
                 # #             print("w=", np.unique(weights_batch))
