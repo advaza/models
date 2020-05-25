@@ -20,20 +20,20 @@ See model.py for more details and usage.
 import ntpath
 
 import numpy as np
-import six
+# import six
 import tensorflow as tf
 
 # from tensorflow.python.platform import tf_logging as logging
 
 from tensorflow.contrib import metrics as contrib_metrics
 
-from tensorflow.contrib import training as contrib_training
+# from tensorflow.contrib import training as contrib_training
 
 from tensorflow.python.training import (
-    monitored_session,
-    session_run_hook,
-    basic_session_run_hooks,
-    training_util,
+    monitored_session
+    # session_run_hook,
+    # basic_session_run_hooks,
+    # training_util,
 )
 from deeplab import common
 from deeplab import model
@@ -41,7 +41,7 @@ from deeplab.datasets import data_generator
 from pathlib import Path
 
 
-from tensorflow.python.summary import summary
+# from tensorflow.python.summary import summary
 from sklearn.metrics import confusion_matrix
 
 flags = tf.app.flags
@@ -318,7 +318,7 @@ def main(unused_argv):
                             # if FLAGS.save_images:
                             #     imsave(os.path.join(image_path, "original_images", new_name), n_im)
 
-                        classes = np.arange(FLAGS.num_classes) + 1
+                        classes = np.arange(FLAGS.num_classes + 1)
                         all_iou = []  # for calculation mean iou for image
 
                         # calc for each class
@@ -394,13 +394,13 @@ def main(unused_argv):
         yaml_file.close()
         logfile.close()
 
-                # #             print(weights_batch.shape)
-                # #             print("w=", np.unique(weights_batch))
-                #             idx = np.where(weights_batch == 1)
-                #             print("idx=", idx)
-                #             vals_to_ignore = np.unique(labels_batch[idx])
-                #             print(vals_to_ignore)
-                #             print(len(np.where(weights_batch != 1)[0]))
+        # #             print(weights_batch.shape)
+        # #             print("w=", np.unique(weights_batch))
+        #             idx = np.where(weights_batch == 1)
+        #             print("idx=", idx)
+        #             vals_to_ignore = np.unique(labels_batch[idx])
+        #             print(vals_to_ignore)
+        #             print(len(np.where(weights_batch != 1)[0]))
 
         # summary_ops = []
         # for metric_name, metric_value in six.iteritems(metrics_to_values):
