@@ -118,7 +118,7 @@ flags.DEFINE_string("dataset_name", "", "dataset name for log file and yaml file
 
 
 def assert_path(path):
-    if os.path.exists(path):
+    if not os.path.exists(path):
         os.mkdir(path)
 
 

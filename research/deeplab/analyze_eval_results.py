@@ -201,7 +201,7 @@ def display_results(
     num_worst=None,
     save_plots=False,
     class_id=None,
-    visualize_name=""
+    visualize_name="",
 ):
     # calculates number of best and worst images according to percent given
     num_images = len(sorted_images_dict)
@@ -224,8 +224,12 @@ def display_results(
     # set path for saving images
     best_images_save_path = worst_images_save_path = None
     if save_plots:
-        best_images_save_path = os.path.join(model_output_path, "visualize%s/best_images" % visualize_name)
-        worst_images_save_path = os.path.join(model_output_path, "visualize%s/worst_images" % visualize_name)
+        best_images_save_path = os.path.join(
+            model_output_path, "visualize%s/best_images" % visualize_name
+        )
+        worst_images_save_path = os.path.join(
+            model_output_path, "visualize%s/worst_images" % visualize_name
+        )
 
         if class_id:
             best_images_save_path += "_class_%s" % class_id
@@ -252,8 +256,8 @@ def get_range(sorted_list, num_images, max_idx=-1):
         min_idx = len(sorted_dict) - num_images
     else:
         max_idx += 1
-        min_idx = max(max_idx-num_images, 0)
-    new_list=sorted_list[min_idx : max_idx]
+        min_idx = max(max_idx - num_images, 0)
+    new_list = sorted_list[min_idx:max_idx]
     return new_list
 
 
