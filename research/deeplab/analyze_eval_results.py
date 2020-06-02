@@ -153,10 +153,10 @@ def display_image(
     masked_label[label == 0] = new_image[label == 0]
     masked_pred[pred == 0] = new_image[pred == 0]
 
-    # creates figure with the 3 images in original size
+    # creates figure with the 6 images in original size
     dpi = mpl.rcParams["figure.dpi"]
     width, height = pred.shape[0], pred.shape[1]
-    figSize = width * 4 / float(dpi), height * 2 / float(dpi)
+    figSize = width * 3 / float(dpi), height * 2 / float(dpi)
 
     fig, ax = plt.subplots(nrows=2, ncols=3, figsize=figSize, sharex=True, sharey=True)
 
