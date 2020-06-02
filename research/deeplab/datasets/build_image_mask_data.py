@@ -33,27 +33,27 @@ tf.app.flags.DEFINE_string(
     'train_image_folder',
     None,
     'Folder containing trainng images')
-tf.app.flags.DEFINE_string(
+tf.app.flags.DEFINE_multi_string(
     'train_image_label_folder',
     None,
     'Folder containing masks for training images')
 
-tf.app.flags.DEFINE_string(
+tf.app.flags.DEFINE_multi_string(
     'val_image_folder',
     None,
     'Folder containing validation images')
 
-tf.app.flags.DEFINE_string(
+tf.app.flags.DEFINE_multi_string(
     'val_image_label_folder',
     None,
     'Folder containing masks for validation')
 
-tf.app.flags.DEFINE_string(
+tf.app.flags.DEFINE_multi_string(
     'test_image_folder',
     None,
     'Folder containing validation images')
 
-tf.app.flags.DEFINE_string(
+tf.app.flags.DEFINE_multi_string(
     'test_image_label_folder',
     None,
     'Folder containing masks for validation')
@@ -70,7 +70,7 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_integer('num_shards', 4, 'Number of output tfrecords.')
 
 
-def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
+def _convert_dataset(dataset_split, dataset_dir_list, dataset_label_dir_list, num_shards):
   """Converts a generic image mask dataset into into tfrecord format.
 
   Args:
@@ -82,14 +82,15 @@ def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
     RuntimeError: If loaded image and label have different shape.
   """
   image_formats = ["jpg", "png", "JPEG", "jpeg"]
-  img_names = []
-  for image_format in image_formats:
-    img_names.extend(tf.gfile.Glob(os.path.join(dataset_dir, '*.' + image_format)))
+  all_data_files = []
+  for i in range(len(dataset_dir_list)):
+    dataset_dir = dataset_dir_list[i]
+    img_names = []
+    for image_format in image_formats:
+      img_names.extend(tf.io.gfile.glob(os.path.join(dataset_dir, '*.' + image_format)))
 
-  if dataset_split == 'train':
-      random.shuffle(img_names)
-
-  if dataset_label_dir:
+    if dataset_label_dir_list:
+      dataset_label_dir = dataset_label_dir_list[i]
       seg_names = []
       for f in img_names:
         # get the filename without the extension
@@ -97,13 +98,23 @@ def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
         # cover its corresponding *_seg.png
         seg = os.path.join(dataset_label_dir, basename+'.png')
         seg_names.append(seg)
-        label_reader = build_data.ImageReader('png', channels=1)
+      all_data_files += list(zip(img_names, seg_names))
+    else:
+      all_data_files += img_names
 
-  num_images = len(img_names)
+  if dataset_split == 'train':
+    random.shuffle(all_data_files)
+
+  num_images = len(all_data_files)
   num_per_shard = int(math.ceil(num_images / num_shards))
 
   image_reader = build_data.ImageReader(image_format, channels=3)
-
+  if dataset_label_dir_list:
+    label_reader = build_data.ImageReader('png', channels=1)
+    img_names, seg_names = zip(*all_data_files)
+  else:
+    img_names = all_data_files
+  print("Found %d data files" % num_images)
   for shard_id in range(num_shards):
     output_filename = os.path.join(
         FLAGS.output_dir,
@@ -137,9 +148,10 @@ def _convert_dataset(dataset_split, dataset_dir, dataset_label_dir, num_shards):
 
 
 def main(unused_argv):
-  tf.gfile.MakeDirs(FLAGS.output_dir)
+  tf.io.gfile.makedirs(FLAGS.output_dir)
 
   if FLAGS.train_image_folder and FLAGS.train_image_label_folder:
+    print("FLAGS.train_image_folder:", FLAGS.train_image_folder, "FLAGS.train_image_label_folder:", FLAGS.train_image_label_folder)
     _convert_dataset(
           'train',
           FLAGS.train_image_folder,
@@ -157,4 +169,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()
