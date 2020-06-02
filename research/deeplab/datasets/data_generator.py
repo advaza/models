@@ -130,11 +130,26 @@ _DEEP_FASHION2_INFORMATION = DatasetDescriptor(
     ]
 )
 
+_MHP_MODA_IMATERIALIST = DatasetDescriptor(
+    splits_to_sizes={
+        'train': 110590,  # num of samples in images/training
+        'val': 2257,  # num of samples in images/validation
+        'test': 100,
+    },
+    num_classes=2,
+    ignore_label=255,
+    label_names=[
+      'background',
+      'clothes',
+    ]
+)
+
 _DATASETS_INFORMATION = {
     'cityscapes': _CITYSCAPES_INFORMATION,
     'pascal_voc_seg': _PASCAL_VOC_SEG_INFORMATION,
     'ade20k': _ADE20K_INFORMATION,
     'deep_fashion2': _DEEP_FASHION2_INFORMATION,
+    'clothes_data': _MHP_MODA_IMATERIALIST,
 }
 
 # Default file pattern of TFRecord of TensorFlow Example.
