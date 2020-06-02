@@ -151,7 +151,6 @@ def main(unused_argv):
   tf.io.gfile.makedirs(FLAGS.output_dir)
 
   if FLAGS.train_image_folder and FLAGS.train_image_label_folder:
-    print("FLAGS.train_image_folder:", FLAGS.train_image_folder, "FLAGS.train_image_label_folder:", FLAGS.train_image_label_folder)
     _convert_dataset(
           'train',
           FLAGS.train_image_folder,
