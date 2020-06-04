@@ -286,7 +286,7 @@ def main(unused_argv):
                         image_path = image_path.decode("utf-8")
                         logfile.writelines(["original image path:%s" % image_path, "\n"])
 
-                    image_name = ntpath.basename(image_path)
+                    image_name = "/".join(os.path.abspath(image_path).split("/")[-2:])
 
                     # check if already calculated for this image
                     if yaml_data and image_name in yaml_data:
