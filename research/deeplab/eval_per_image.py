@@ -20,7 +20,6 @@ See model.py for more details and usage.
 import ntpath
 
 import numpy as np
-
 # import six
 import tensorflow as tf
 
@@ -31,7 +30,7 @@ from tensorflow.contrib import metrics as contrib_metrics
 # from tensorflow.contrib import training as contrib_training
 
 from tensorflow.python.training import (
-    monitored_session,
+    monitored_session
     # session_run_hook,
     # basic_session_run_hooks,
     # training_util,
@@ -177,9 +176,8 @@ def main(unused_argv):
                 add_flipped_images=FLAGS.add_flipped_images,
             )
         predictions = predictions[common.OUTPUT_TYPE]
-        # predictions = tf.reshape(predictions, shape=[-1])
-        labels = samples[common.LABEL]
-        # labels = tf.reshape(samples[common.LABEL], shape=[-1])
+        predictions = tf.reshape(predictions, shape=[-1])
+        labels = tf.reshape(samples[common.LABEL], shape=[-1])
         weights = tf.to_float(tf.not_equal(labels, dataset.ignore_label))
 
         # Set ignore_label regions to label 0, because metrics.mean_iou requires
@@ -199,7 +197,7 @@ def main(unused_argv):
         # metric_map["eval/%s_overall" % predictions_tag] = tf.metrics.mean_iou(
         #     labels=labels, predictions=predictions, num_classes=num_classes, weights=weights
         # )
-        # # # IoU for each class.
+        # # IoU for each class.
         # one_hot_predictions = tf.one_hot(predictions, num_classes)
         # one_hot_predictions = tf.reshape(one_hot_predictions, [-1, num_classes])
         # one_hot_labels = tf.one_hot(labels, num_classes)
@@ -267,7 +265,7 @@ def main(unused_argv):
                         # images_batch,
                         predictions_batch,
                         labels_batch,
-                        weights_batch,
+                        weights_batch
                     ) = session.run(
                         [
                             # metrics_to_updates,
@@ -276,7 +274,7 @@ def main(unused_argv):
                             # samples[common.IMAGE],
                             predictions,
                             labels,
-                            weights,
+                            weights
                         ]
                     )
 
@@ -298,7 +296,7 @@ def main(unused_argv):
                             logfile.writelines(["image name:%s" % image_name, "\n"])
                             image_data_dict["path"] = image_path
 
-                            # image = images_batch
+                            # image = images_batch[idx]
                             label = labels_batch
                             w = np.array(weights_batch, dtype=np.int32)
                             pred = predictions_batch
@@ -331,9 +329,7 @@ def main(unused_argv):
                                         ["class %s" % str(c), " not in prediction ", "\n"]
                                     )
                                     if c in label:
-                                        logfile.writelines(
-                                            ["class %s" % str(c), " in label ", "\n"]
-                                        )
+                                        logfile.writelines(["class %s" % str(c), " in label ", "\n"])
                                     else:
                                         logfile.writelines(
                                             ["class %s" % str(c), " also not in label ", "\n"]
@@ -388,10 +384,10 @@ def main(unused_argv):
                             image_data_dict["mean_iou"] = float(mean_iou)
                             lines = ["mean_iou: %s\n" % mean_iou]
 
-                            # add the calc (mean for all images so far) from original eval code to log file
-                            for m, v in metrics_results_batch.items():
-                                lines.append(str(m) + ": " + str(v) + "\n")
-                            logfile.writelines(lines)
+                            # # add the calc (mean for all images so far) from original eval code to log file
+                            # for m, v in metrics_results_batch.items():
+                            #     lines.append(str(m) + ": " + str(v) + "\n")
+                            # logfile.writelines(lines)
 
                             # update yaml file with image info
                             yaml.dump({image_name: image_data_dict}, yaml_file)
