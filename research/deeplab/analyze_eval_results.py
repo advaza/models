@@ -260,6 +260,105 @@ def get_range(sorted_list, num_images, max_idx=-1):
     new_list = sorted_list[min_idx:max_idx]
     return new_list
 
+def fix_path_func_all_datasets(image_path):
+    image_name = Path(image_path).stem
+    labels_path = ""
+
+    if "/cnvrg" in image_path:
+        image_path = image_path.replace("/cnvrg", "")
+    if "imaterialist" in image_path:
+        image_path = image_path.replace("images", "train/images")
+        labels_path = "/data/imaterialist-fashion/train/TopBottomDressJacket"
+    elif "mhp" in image_path:
+        labels_path = "/data/mhp/TopBottomJacketDress"
+    elif "modanet" in image_path:
+        labels_path = "/data/modanet_cnvrg-1/TopBottomJacketDress"
+
+    label_path = os.path.join(labels_path, image_name + ".png")
+    return image_path, label_path
+
+
+def create_weights_dict(sorted_dict, fix_path_f=None, save_path=None):
+    weights_dict = {}
+
+    for i in range(len(sorted_dict)):
+        path = sorted_dict[i]["name"]
+        if fix_path_f is not None:
+            path = fix_path_f(path)[0]
+        weight = sorted_dict[i]["value"]
+        weights_dict[path] = weight
+
+    if save_path is not None:
+        with open(save_path, "a+") as weights_yaml:
+            yaml.dump(weights_dict, weights_yaml)
+
+    return weights_dict
+
+
+def display_original_label(images_list, number_list, save_path, fix_path_func=fix_path_func_all_datasets):
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
+    i = 0
+    for image_path in tqdm(images_list):
+
+        image_path = image_path.replace("/cnvrg", "")
+        image_num = number_list[i]
+
+        image_path, label_path = fix_path_func(image_path)
+
+        image = imread(image_path)
+        label = imread(label_path)
+
+        new_label = np.zeros_like(label)
+        new_label[label != 0] = 255
+
+        new_label = LUT[new_label]
+        new_label = new_label.astype(image.dtype)
+
+        masked_label = cv2.addWeighted(image, 0.3, new_label, 0.7, 0)
+        masked_label[label == 0] = image[label == 0]
+
+        # creates figure with the 6 images in original size
+        dpi = mpl.rcParams["figure.dpi"]
+        height, width = image.shape[0], image.shape[1]
+        figSize = width * 3 / float(dpi), height / float(dpi)
+
+        fig, ax = plt.subplots(nrows=1, ncols=3, figsize=figSize, sharex=True, sharey=True)
+
+        title = "image path: " + image_path + " , image number: " + str(image_num)
+        fig.suptitle(title, fontsize=14)
+        ax[0].set_title("image")
+        ax[0].imshow(image)
+        ax[1].set_title("mask")
+        ax[1].imshow(new_label)
+        ax[2].set_title("masked image")
+        ax[2].imshow(masked_label)
+        plt.savefig(os.path.join(save_path, str(image_num) + ".png"))
+        i += 1
+
+
+def top_of_under_value(sorted_dict, val=0.5, number=200):
+    pathes = []
+    vals = []
+    numbers = []
+    num_im = len(sorted_dict)
+    for i in range(num_im):
+        value = float(sorted_dict[i]['value'])
+        if value < val:
+            vals.append(value)
+            pathes.append(sorted_dict[i]['name'])
+            numbers.append(i)
+
+    vals = np.asarray(vals)
+    pathes = np.asarray(pathes)
+    numbers = np.asarray(numbers)
+
+    vals_top = vals[0:number]
+    paths_top = pathes[0:number]
+    numbers_top = numbers[0:number]
+
+    display_original_label(paths_top, numbers_top, "/cnvrg/output/vis/" + str(val) + "_" + str(number))
+
 
 if __name__ == "__main__":
     # yaml_path = "output/test_set_results.yaml"
