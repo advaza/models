@@ -20,6 +20,7 @@ See model.py for more details and usage.
 import ntpath
 
 import numpy as np
+
 # import six
 import tensorflow as tf
 
@@ -30,7 +31,7 @@ from tensorflow.contrib import metrics as contrib_metrics
 # from tensorflow.contrib import training as contrib_training
 
 from tensorflow.python.training import (
-    monitored_session
+    monitored_session,
     # session_run_hook,
     # basic_session_run_hooks,
     # training_util,
@@ -176,8 +177,9 @@ def main(unused_argv):
                 add_flipped_images=FLAGS.add_flipped_images,
             )
         predictions = predictions[common.OUTPUT_TYPE]
-        predictions = tf.reshape(predictions, shape=[-1])
-        labels = tf.reshape(samples[common.LABEL], shape=[-1])
+        # predictions = tf.reshape(predictions, shape=[-1])
+        labels = samples[common.LABEL]
+        # labels = tf.reshape(samples[common.LABEL], shape=[-1])
         weights = tf.to_float(tf.not_equal(labels, dataset.ignore_label))
 
         # Set ignore_label regions to label 0, because metrics.mean_iou requires
@@ -191,34 +193,34 @@ def main(unused_argv):
         if FLAGS.add_flipped_images:
             predictions_tag += "_flipped"
 
-        # Define the evaluation metric.
-        metric_map = {}
-        num_classes = dataset.num_of_classes
-        metric_map["eval/%s_overall" % predictions_tag] = tf.metrics.mean_iou(
-            labels=labels, predictions=predictions, num_classes=num_classes, weights=weights
-        )
-        # IoU for each class.
-        one_hot_predictions = tf.one_hot(predictions, num_classes)
-        one_hot_predictions = tf.reshape(one_hot_predictions, [-1, num_classes])
-        one_hot_labels = tf.one_hot(labels, num_classes)
-        one_hot_labels = tf.reshape(one_hot_labels, [-1, num_classes])
-        for c in range(num_classes):
-            predictions_tag_c = "%s_class_%d" % (predictions_tag, c)
-            tp, tp_op = tf.metrics.true_positives(
-                labels=one_hot_labels[:, c], predictions=one_hot_predictions[:, c], weights=weights
-            )
-            fp, fp_op = tf.metrics.false_positives(
-                labels=one_hot_labels[:, c], predictions=one_hot_predictions[:, c], weights=weights
-            )
-            fn, fn_op = tf.metrics.false_negatives(
-                labels=one_hot_labels[:, c], predictions=one_hot_predictions[:, c], weights=weights
-            )
-            tp_fp_fn_op = tf.group(tp_op, fp_op, fn_op)
-            iou = tf.where(tf.greater(tp + fn, 0.0), tp / (tp + fn + fp), tf.constant(np.NaN))
-            metric_map["eval/%s" % predictions_tag_c] = (iou, tp_fp_fn_op)
-
-        (metrics_to_values, metrics_to_updates) = contrib_metrics.aggregate_metric_map(metric_map)
-
+        # # Define the evaluation metric.
+        # metric_map = {}
+        # num_classes = dataset.num_of_classes
+        # metric_map["eval/%s_overall" % predictions_tag] = tf.metrics.mean_iou(
+        #     labels=labels, predictions=predictions, num_classes=num_classes, weights=weights
+        # )
+        # # # IoU for each class.
+        # one_hot_predictions = tf.one_hot(predictions, num_classes)
+        # one_hot_predictions = tf.reshape(one_hot_predictions, [-1, num_classes])
+        # one_hot_labels = tf.one_hot(labels, num_classes)
+        # one_hot_labels = tf.reshape(one_hot_labels, [-1, num_classes])
+        # for c in range(num_classes):
+        #     predictions_tag_c = "%s_class_%d" % (predictions_tag, c)
+        #     tp, tp_op = tf.metrics.true_positives(
+        #         labels=one_hot_labels[:, c], predictions=one_hot_predictions[:, c], weights=weights
+        #     )
+        #     fp, fp_op = tf.metrics.false_positives(
+        #         labels=one_hot_labels[:, c], predictions=one_hot_predictions[:, c], weights=weights
+        #     )
+        #     fn, fn_op = tf.metrics.false_negatives(
+        #         labels=one_hot_labels[:, c], predictions=one_hot_predictions[:, c], weights=weights
+        #     )
+        #     tp_fp_fn_op = tf.group(tp_op, fp_op, fn_op)
+        #     iou = tf.where(tf.greater(tp + fn, 0.0), tp / (tp + fn + fp), tf.constant(np.NaN))
+        #     metric_map["eval/%s" % predictions_tag_c] = (iou, tp_fp_fn_op)
+        #
+        # (metrics_to_values, metrics_to_updates) = contrib_metrics.aggregate_metric_map(metric_map)
+        #
         session_creator = monitored_session.ChiefSessionCreator(
             checkpoint_filename_with_path=FLAGS.checkpoint_path
         )
@@ -259,8 +261,8 @@ def main(unused_argv):
 
                 while not session.should_stop():
                     (
-                        metrics_updates_batch,
-                        metrics_results_batch,
+                        # metrics_updates_batch,
+                        # metrics_results_batch,
                         image_name_batch,
                         # images_batch,
                         predictions_batch,
@@ -268,8 +270,8 @@ def main(unused_argv):
                         weights_batch,
                     ) = session.run(
                         [
-                            metrics_to_updates,
-                            metrics_to_values,
+                            # metrics_to_updates,
+                            # metrics_to_values,
                             samples[common.IMAGE_NAME],
                             # samples[common.IMAGE],
                             predictions,
@@ -279,7 +281,7 @@ def main(unused_argv):
                     )
 
                     # get original image path
-                    for idx, image_path in enumerate(image_name_batch):
+                    for image_path in image_name_batch:
 
                         # dictionary for image data to save in yaml file
                         image_data_dict = {}
@@ -296,10 +298,10 @@ def main(unused_argv):
                             logfile.writelines(["image name:%s" % image_name, "\n"])
                             image_data_dict["path"] = image_path
 
-                            # image = images_batch[idx]
-                            label = labels_batch[idx]
-                            w = np.array(weights_batch[idx], dtype=np.int32)
-                            pred = predictions_batch[idx]
+                            # image = images_batch
+                            label = labels_batch
+                            w = np.array(weights_batch, dtype=np.int32)
+                            pred = predictions_batch
 
                             # save images
                             if FLAGS.save_path:
@@ -329,7 +331,9 @@ def main(unused_argv):
                                         ["class %s" % str(c), " not in prediction ", "\n"]
                                     )
                                     if c in label:
-                                        logfile.writelines(["class %s" % str(c), " in label ", "\n"])
+                                        logfile.writelines(
+                                            ["class %s" % str(c), " in label ", "\n"]
+                                        )
                                     else:
                                         logfile.writelines(
                                             ["class %s" % str(c), " also not in label ", "\n"]
