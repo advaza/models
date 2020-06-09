@@ -278,118 +278,119 @@ def main(unused_argv):
                         ]
                     )
 
-                    # dictionary for image data to save in yaml file
-                    image_data_dict = {}
-
                     # get original image path
-                    for image_path in image_name_batch:
+                    for idx, image_path in enumerate(image_name_batch):
+
+                        # dictionary for image data to save in yaml file
+                        image_data_dict = {}
+
                         image_path = image_path.decode("utf-8")
                         logfile.writelines(["original image path:%s" % image_path, "\n"])
 
-                    image_name = "/".join(os.path.abspath(image_path).split("/")[-2:])
+                        image_name = "/".join(os.path.abspath(image_path).split("/")[-2:])
 
-                    # check if already calculated for this image
-                    if yaml_data and image_name in yaml_data:
-                        logfile.write("%s already exists\n" % image_name)
-                    else:
-                        logfile.writelines(["image name:%s" % image_name, "\n"])
-                        image_data_dict["path"] = image_path
+                        # check if already calculated for this image
+                        if yaml_data and image_name in yaml_data:
+                            logfile.write("%s already exists\n" % image_name)
+                        else:
+                            logfile.writelines(["image name:%s" % image_name, "\n"])
+                            image_data_dict["path"] = image_path
 
-                        # image = images_batch
-                        label = labels_batch
-                        w = np.array(weights_batch, dtype=np.int32)
-                        pred = predictions_batch
+                            # image = images_batch[idx]
+                            label = labels_batch[idx]
+                            w = np.array(weights_batch[idx], dtype=np.int32)
+                            pred = predictions_batch[idx]
 
-                        # save images
-                        if FLAGS.save_path:
-                            # n_im = image.reshape((513, 513)) #TODO - get size
-                            n_w = w.reshape((513, 513))
-                            n_label = label.reshape((513, 513)) * n_w
-                            n_pred = pred.reshape((513, 513)) * n_w
-                            base_name = Path(image_name).stem
-                            new_name = base_name + ".png"
+                            # save images
+                            if FLAGS.save_path:
+                                # n_im = image.reshape((513, 513)) #TODO - get size
+                                n_w = w.reshape((513, 513))
+                                n_label = label.reshape((513, 513)) * n_w
+                                n_pred = pred.reshape((513, 513)) * n_w
+                                base_name = Path(image_name).stem
+                                new_name = base_name + ".png"
 
-                            if FLAGS.save_predictions:
-                                imsave(os.path.join(pred_path, new_name), n_pred)
-                            if FLAGS.save_labels:
-                                imsave(os.path.join(labels_path, new_name), n_label)
-                            if FLAGS.save_weights:
-                                imsave(os.path.join(weights_path, "weights", new_name), n_w)
-                            # if FLAGS.save_images:
-                            #     imsave(os.path.join(image_path, "original_images", new_name), n_im)
+                                if FLAGS.save_predictions:
+                                    imsave(os.path.join(pred_path, new_name), n_pred)
+                                if FLAGS.save_labels:
+                                    imsave(os.path.join(labels_path, new_name), n_label)
+                                if FLAGS.save_weights:
+                                    imsave(os.path.join(weights_path, "weights", new_name), n_w)
+                                # if FLAGS.save_images:
+                                #     imsave(os.path.join(image_path, "original_images", new_name), n_im)
 
-                        classes = np.arange(FLAGS.num_classes + 1)
-                        all_iou = []  # for calculation mean iou for image
+                            classes = np.arange(FLAGS.num_classes + 1)
+                            all_iou = []  # for calculation mean iou for image
 
-                        # calc for each class
-                        for c in classes:
-                            if c not in pred:
-                                logfile.writelines(
-                                    ["class %s" % str(c), " not in prediction ", "\n"]
-                                )
-                                if c in label:
-                                    logfile.writelines(["class %s" % str(c), " in label ", "\n"])
-                                else:
+                            # calc for each class
+                            for c in classes:
+                                if c not in pred:
                                     logfile.writelines(
-                                        ["class %s" % str(c), " also not in label ", "\n"]
+                                        ["class %s" % str(c), " not in prediction ", "\n"]
                                     )
+                                    if c in label:
+                                        logfile.writelines(["class %s" % str(c), " in label ", "\n"])
+                                    else:
+                                        logfile.writelines(
+                                            ["class %s" % str(c), " also not in label ", "\n"]
+                                        )
 
-                            c_label = 1 * (label == c)
-                            c_pred = 1 * (pred == c)
-                            c_m = confusion_matrix(c_label, c_pred, sample_weight=w).ravel()
+                                c_label = 1 * (label == c)
+                                c_pred = 1 * (pred == c)
+                                c_m = confusion_matrix(c_label, c_pred, sample_weight=w).ravel()
 
-                            if len(c_m) < 4:  # only if all 0 or all 1
-                                tp = tn = fp = fn = 0
-                                if np.all(c_pred * c_label):  # if all 1
-                                    tp = c_m[0]
-                                else:  # all is 0
-                                    tn = c_m[0]
+                                if len(c_m) < 4:  # only if all 0 or all 1
+                                    tp = tn = fp = fn = 0
+                                    if np.all(c_pred * c_label):  # if all 1
+                                        tp = c_m[0]
+                                    else:  # all is 0
+                                        tn = c_m[0]
 
-                                c_m = tn, fp, fn, tp
-                            else:
-                                tn, fp, fn, tp = c_m
+                                    c_m = tn, fp, fn, tp
+                                else:
+                                    tn, fp, fn, tp = c_m
 
-                            # calc iou for this class
-                            iou = np.NaN
-                            if tp + fn + fp > 0.0:
-                                iou = tp / (tp + fn + fp)
+                                # calc iou for this class
+                                iou = np.NaN
+                                if tp + fn + fp > 0.0:
+                                    iou = tp / (tp + fn + fp)
 
-                            if not np.isnan(iou):
-                                all_iou.append(iou)
+                                if not np.isnan(iou):
+                                    all_iou.append(iou)
 
-                            # confusion matrix in %
-                            sum_cm = np.sum(c_m)
-                            if sum_cm > 0:
-                                c_m_p = c_m / sum_cm
-                            else:
-                                c_m_p = 0, 0, 0, 0
-                            tn_p, fp_p, fn_p, tp_p = c_m_p
+                                # confusion matrix in %
+                                sum_cm = np.sum(c_m)
+                                if sum_cm > 0:
+                                    c_m_p = c_m / sum_cm
+                                else:
+                                    c_m_p = 0, 0, 0, 0
+                                tn_p, fp_p, fn_p, tp_p = c_m_p
 
-                            lines = [
-                                "class " + str(c) + " iou: " + str(iou) + "\n",
-                                "tn=" + str(tn_p) + "\n",
-                                "fp=" + str(fp_p) + "\n",
-                                "fn=" + str(fn_p) + "\n",
-                                "tp=" + str(tp_p) + "\n",
-                            ]
+                                lines = [
+                                    "class " + str(c) + " iou: " + str(iou) + "\n",
+                                    "tn=" + str(tn_p) + "\n",
+                                    "fp=" + str(fp_p) + "\n",
+                                    "fn=" + str(fn_p) + "\n",
+                                    "tp=" + str(tp_p) + "\n",
+                                ]
+                                logfile.writelines(lines)
+
+                                c_m_data = [float(tn_p), float(fp_p), float(fn_p), float(tp_p)]
+                                image_data_dict["confusion_mat_%s" % c] = c_m_data
+                                image_data_dict["class_%s_iou" % c] = float(iou)
+
+                            # mean iou calc
+                            mean_iou = np.mean(all_iou)
+                            image_data_dict["mean_iou"] = float(mean_iou)
+                            lines = ["mean_iou: %s\n" % mean_iou]
+
+                            # add the calc (mean for all images so far) from original eval code to log file
+                            for m, v in metrics_results_batch.items():
+                                lines.append(str(m) + ": " + str(v) + "\n")
                             logfile.writelines(lines)
 
-                            c_m_data = [float(tn_p), float(fp_p), float(fn_p), float(tp_p)]
-                            image_data_dict["confusion_mat_%s" % c] = c_m_data
-                            image_data_dict["class_%s_iou" % c] = float(iou)
-
-                        # mean iou calc
-                        mean_iou = np.mean(all_iou)
-                        image_data_dict["mean_iou"] = float(mean_iou)
-                        lines = ["mean_iou: %s\n" % mean_iou]
-
-                        # add the calc (mean for all images so far) from original eval code to log file
-                        for m, v in metrics_results_batch.items():
-                            lines.append(str(m) + ": " + str(v) + "\n")
-                        logfile.writelines(lines)
-
-                        # update yaml file with image info
-                        yaml.dump({image_name: image_data_dict}, yaml_file)
+                            # update yaml file with image info
+                            yaml.dump({image_name: image_data_dict}, yaml_file)
 
         yaml_file.close()
         logfile.close()
