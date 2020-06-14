@@ -254,6 +254,8 @@ def main(unused_argv):
         log_file_path = "/cnvrg/output/%s_log.txt" % FLAGS.dataset_name
         logfile = open(log_file_path, "a+")
 
+        im_size = FLAGS.eval_crop_size[0], FLAGS.eval_crop_size[1]
+
         with open(yaml_file_path, "a+") as yaml_file:
             with monitored_session.MonitoredSession(session_creator=session_creator) as session:
 
@@ -287,7 +289,16 @@ def main(unused_argv):
                         image_path = image_path.decode("utf-8")
                         logfile.writelines(["original image path:%s" % image_path, "\n"])
 
-                        image_name = "/".join(os.path.abspath(image_path).split("/")[-2:])
+                        base_name = os.path.abspath(image_path).split("/")[-1]
+
+                        if "mhp" in image_path:
+                            image_name = "mhp/" + base_name
+                        elif "modanet" in image_path:
+                            image_name = "modanet/" + base_name
+                        elif "imaterialist" in image_path:
+                            image_name = "imaterialist/" + base_name
+                        else:
+                            image_name = image_path
 
                         # check if already calculated for this image
                         if yaml_data and image_name in yaml_data:
@@ -300,13 +311,13 @@ def main(unused_argv):
                             label = labels_batch
                             w = np.array(weights_batch, dtype=np.int32)
                             pred = predictions_batch
-
                             # save images
                             if FLAGS.save_path:
-                                # n_im = image.reshape((513, 513)) #TODO - get size
-                                n_w = w.reshape((513, 513))
-                                n_label = label.reshape((513, 513)) * n_w
-                                n_pred = pred.reshape((513, 513)) * n_w
+                                # n_im = image.reshape(im_size)
+                                n_w = w.reshape(im_size)
+                                n_label = label.reshape(im_size) * n_w
+                                n_pred = pred.reshape(im_size) * n_w
+
                                 base_name = Path(image_name).stem
                                 new_name = base_name + ".png"
 
@@ -315,7 +326,7 @@ def main(unused_argv):
                                 if FLAGS.save_labels:
                                     imsave(os.path.join(labels_path, new_name), n_label)
                                 if FLAGS.save_weights:
-                                    imsave(os.path.join(weights_path, "weights", new_name), n_w)
+                                    imsave(os.path.join(weights_path, new_name), n_w)
                                 # if FLAGS.save_images:
                                 #     imsave(os.path.join(image_path, "original_images", new_name), n_im)
 
