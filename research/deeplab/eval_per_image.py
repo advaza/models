@@ -246,7 +246,7 @@ def main(unused_argv):
                         image_data_dict = {}
 
                         image_path = image_path.decode("utf-8")
-                        yaml_key = (batch_index, image_index)
+                        yaml_key = "(%d, %d)" % (batch_index, image_index)
 
                         # check if already calculated for this image
                         if yaml_data and yaml_key in yaml_data:
