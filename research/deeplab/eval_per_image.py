@@ -94,7 +94,7 @@ flags.DEFINE_string("dataset_dir", None, "Where the dataset reside.")
 
 
 flags.DEFINE_integer(
-    "num_classes", 0, "Number of classes in the dataset, not including the background."
+    "num_classes", 1, "Number of classes in the dataset, not including the background."
 )
 
 

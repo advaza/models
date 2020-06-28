@@ -6,11 +6,25 @@ import cv2
 from skimage.io import imread
 import os
 from pathlib import Path
+from tqdm import tqdm
 
 LUT = np.random.randint(255, size=(256, 3))
 LUT[0] = [0, 0, 0]
 LUT[127] = [0, 255, 0]
 LUT[255] = [255, 0, 0]
+
+import tensorflow as tf
+
+flags = tf.app.flags
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string("output_dir", "/cnvrg/output/", "directory to save the output")
+flags.DEFINE_string("im_path", "/data/mhp/images", "path to original images")
+flags.DEFINE_string("model_output_path", "/cnvrg/output/", "path to model")
+flags.DEFINE_string("yaml_name", "mhp", "name of yaml file")
+flags.DEFINE_int("num_classes", 1, "number of classes")
+flags.DEFINE_bool("iuo_per_class", False, "if True, also analyze per class")
+flags.DEFINE_bool("display_results", False, "if True, displays the results")
 
 
 def three_groups(iuo_arr, names, percent):
@@ -260,6 +274,7 @@ def get_range(sorted_list, num_images, max_idx=-1):
     new_list = sorted_list[min_idx:max_idx]
     return new_list
 
+
 def fix_path_func_all_datasets(image_path):
     image_name = Path(image_path).stem
     labels_path = ""
@@ -295,7 +310,9 @@ def create_weights_dict(sorted_dict, fix_path_f=None, save_path=None):
     return weights_dict
 
 
-def display_original_label(images_list, number_list, save_path, fix_path_func=fix_path_func_all_datasets):
+def display_original_label(
+    images_list, number_list, save_path, fix_path_func=fix_path_func_all_datasets
+):
     if not os.path.exists(save_path):
         os.mkdir(save_path)
     i = 0
@@ -343,10 +360,10 @@ def top_of_under_value(sorted_dict, val=0.5, number=200):
     numbers = []
     num_im = len(sorted_dict)
     for i in range(num_im):
-        value = float(sorted_dict[i]['value'])
+        value = float(sorted_dict[i]["value"])
         if value < val:
             vals.append(value)
-            pathes.append(sorted_dict[i]['name'])
+            pathes.append(sorted_dict[i]["name"])
             numbers.append(i)
 
     vals = np.asarray(vals)
@@ -357,37 +374,39 @@ def top_of_under_value(sorted_dict, val=0.5, number=200):
     paths_top = pathes[0:number]
     numbers_top = numbers[0:number]
 
-    display_original_label(paths_top, numbers_top, "/cnvrg/output/vis/" + str(val) + "_" + str(number))
+    display_original_label(
+        paths_top, numbers_top, "/cnvrg/output/vis/" + str(val) + "_" + str(number)
+    )
 
 
 if __name__ == "__main__":
-    # yaml_path = "output/test_set_results.yaml"
-    yaml_name = "mhp"
-    yaml_path = os.path.join("/cnvrg/output/", yaml_name + "_results.yaml")
-    # yaml_path = "/usrs/shira/Downloads/test_set_results.yaml"
+
+    yaml_path = os.path.join(FLAGS.output_path, FLAGS.yaml_name + "_results.yaml")
 
     # get evaluation results from yaml file
-    m, c_arr, im_names = load_eval_yaml(yaml_path, 3)
+    m, c_arr, im_names = load_eval_yaml(yaml_path, FLAGS.num_classes)
 
     # mean iou
     # sort the images according to mean iou
     sorted_dict = sort_images_by_values(m, im_names)
 
     # save mean iou sort
-    new_yaml = os.path.join("/cnvrg/output/", yaml_name + "_sorted_images.yaml")
+    new_yaml = os.path.join(FLAGS.output_dir, FLAGS.yaml_name + "_sorted_images.yaml")
     with open(new_yaml, "a+") as n_yaml_file:
         yaml.dump(sorted_dict, n_yaml_file)
 
     # display results for mean iou
-    im_path = "/data/mhp/images"
-    model_output_path = "/cnvrg/output/"
-    display_results(sorted_dict, im_path, model_output_path, save_plots=True)
+    if FLAGS.display_results:
+        display_results(sorted_dict, FLAGS.im_path, FLAGS.model_output_dir, save_plots=True)
 
     # iou per class
-    for class_id, c in enumerate(c_arr):
-        # sort the images according to iou for the class c
-        c_sorted_dict = sort_images_by_values(c, im_names)
-        # display results for class c
-        display_results(
-            c_sorted_dict, im_path, model_output_path, save_plots=True, class_id=class_id
-        )
+    if FLAGS.iuo_per_class:
+        for class_id, c in enumerate(c_arr):
+            # sort the images according to iou for the class c
+            c_sorted_dict = sort_images_by_values(c, im_names)
+
+            # display results for class c
+            if FLAGS.display_results:
+                display_results(
+                    c_sorted_dict, FLAGS.im_path, FLAGS.model_output_path, save_plots=True, class_id=class_id
+                )
