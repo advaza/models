@@ -87,7 +87,7 @@ def _convert_dataset(dataset_split, dataset_dir_list, dataset_label_dir_list, nu
     dataset_dir = dataset_dir_list[i]
     img_names = []
     for image_format in image_formats:
-      img_names.extend(tf.io.gfile.glob(os.path.join(dataset_dir, '*.' + image_format)))
+      img_names.extend(tf.gfile.Glob(os.path.join(dataset_dir, '*.' + image_format)))
 
     if dataset_label_dir_list:
       dataset_label_dir = dataset_label_dir_list[i]
@@ -152,7 +152,7 @@ def _convert_dataset(dataset_split, dataset_dir_list, dataset_label_dir_list, nu
 
 
 def main(unused_argv):
-  tf.io.gfile.makedirs(FLAGS.output_dir)
+  tf.gfile.MakeDirs(FLAGS.output_dir)
 
   if FLAGS.train_image_folder and FLAGS.train_image_label_folder:
     print("FLAGS.train_image_folder:", FLAGS.train_image_folder,
@@ -174,4 +174,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  tf.compat.v1.app.run()
+    tf.app.run()
