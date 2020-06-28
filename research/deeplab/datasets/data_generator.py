@@ -181,7 +181,8 @@ class Dataset(object):
                should_shuffle=False,
                should_repeat=False,
                num_classes=0,
-               get_resized_image_shape=False):
+               get_resized_image_shape=False,
+               get_original_image=False):
     """Initializes the dataset.
 
     Args:
@@ -239,6 +240,7 @@ class Dataset(object):
     self.should_shuffle = should_shuffle
     self.should_repeat = should_repeat
     self.get_resized_image_shape = get_resized_image_shape
+    self.get_original_image = get_original_image
 
     if dataset_name in ['deep_fashion2'] and num_classes > 0:
         self.num_of_classes = num_classes + 1
@@ -358,7 +360,7 @@ class Dataset(object):
         get_resized_image_shape=self.get_resized_image_shape)
     sample[common.IMAGE] = image
 
-    if not self.is_training:
+    if self.get_original_image:
       # Original image is only used during visualization.
       sample[common.ORIGINAL_IMAGE] = original_image
 
