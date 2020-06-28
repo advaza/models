@@ -94,11 +94,6 @@ flags.DEFINE_string("dataset_dir", None, "Where the dataset reside.")
 
 
 flags.DEFINE_integer(
-    "num_classes", 1, "Number of classes in the dataset, not including the background."
-)
-
-
-flags.DEFINE_integer(
     "max_number_of_evaluations",
     0,
     "Maximum number of eval iterations. Will loop " "indefinitely upon nonpositive values.",
@@ -119,7 +114,7 @@ flags.DEFINE_string("dataset_name", "", "dataset name for log file and yaml file
 
 def assert_path(path):
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
 
 
 def main(unused_argv):
@@ -139,7 +134,6 @@ def main(unused_argv):
         is_training=False,
         should_shuffle=False,
         should_repeat=False,
-        num_classes=FLAGS.num_classes,
     )
 
     tf.gfile.MakeDirs(FLAGS.eval_logdir)
@@ -241,7 +235,7 @@ def main(unused_argv):
             assert_path(images_path)
 
         # open the results yaml - if exists
-        yaml_file_path = "/cnvrg/output/%s_results.yaml" % FLAGS.dataset_name
+        yaml_file_path = os.path.join(FLAGS.eval_logdir, "%s_results.yaml" % FLAGS.dataset_name)
 
         if os.path.exists(yaml_file_path):
             yaml_file = open(yaml_file_path)
@@ -251,7 +245,7 @@ def main(unused_argv):
             yaml_data = None
 
         # open log file (info about process and calculations)
-        log_file_path = "/cnvrg/output/%s_log.txt" % FLAGS.dataset_name
+        log_file_path = os.path.join(FLAGS.eval_logdir, "%s_log.txt" % FLAGS.dataset_name)
         logfile = open(log_file_path, "a+")
 
         im_size = FLAGS.eval_crop_size[0], FLAGS.eval_crop_size[1]
@@ -330,7 +324,7 @@ def main(unused_argv):
                                 # if FLAGS.save_images:
                                 #     imsave(os.path.join(image_path, "original_images", new_name), n_im)
 
-                            classes = np.arange(FLAGS.num_classes + 1)
+                            classes = np.arange(dataset.num_of_classes)
                             all_iou = []  # for calculation mean iou for image
 
                             # calc for each class
