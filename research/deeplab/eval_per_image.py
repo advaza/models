@@ -20,6 +20,7 @@ See model.py for more details and usage.
 import ntpath
 
 import numpy as np
+
 # import six
 import tensorflow as tf
 
@@ -30,7 +31,7 @@ from tensorflow.contrib import metrics as contrib_metrics
 # from tensorflow.contrib import training as contrib_training
 
 from tensorflow.python.training import (
-    monitored_session
+    monitored_session,
     # session_run_hook,
     # basic_session_run_hooks,
     # training_util,
@@ -117,6 +118,11 @@ def assert_path(path):
         os.makedirs(path)
 
 
+def divide_no_nan(a, b):
+    np.seterr(divide="ignore")
+    return np.where(b != 0, a / b, np.zeros_like(a))
+
+
 def main(unused_argv):
     tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -170,8 +176,8 @@ def main(unused_argv):
                 add_flipped_images=FLAGS.add_flipped_images,
             )
         predictions = predictions[common.OUTPUT_TYPE]
-        predictions = tf.reshape(predictions, shape=[-1])
-        labels = tf.reshape(samples[common.LABEL], shape=[-1])
+        predictions = tf.reshape(predictions, shape=[FLAGS.eval_batch_size, -1])
+        labels = tf.reshape(samples[common.LABEL], shape=[FLAGS.eval_batch_size, -1])
         weights = tf.to_float(tf.not_equal(labels, dataset.ignore_label))
 
         # Set ignore_label regions to label 0, because metrics.mean_iou requires
@@ -185,34 +191,6 @@ def main(unused_argv):
         if FLAGS.add_flipped_images:
             predictions_tag += "_flipped"
 
-        # # Define the evaluation metric.
-        # metric_map = {}
-        # num_classes = dataset.num_of_classes
-        # metric_map["eval/%s_overall" % predictions_tag] = tf.metrics.mean_iou(
-        #     labels=labels, predictions=predictions, num_classes=num_classes, weights=weights
-        # )
-        # # IoU for each class.
-        # one_hot_predictions = tf.one_hot(predictions, num_classes)
-        # one_hot_predictions = tf.reshape(one_hot_predictions, [-1, num_classes])
-        # one_hot_labels = tf.one_hot(labels, num_classes)
-        # one_hot_labels = tf.reshape(one_hot_labels, [-1, num_classes])
-        # for c in range(num_classes):
-        #     predictions_tag_c = "%s_class_%d" % (predictions_tag, c)
-        #     tp, tp_op = tf.metrics.true_positives(
-        #         labels=one_hot_labels[:, c], predictions=one_hot_predictions[:, c], weights=weights
-        #     )
-        #     fp, fp_op = tf.metrics.false_positives(
-        #         labels=one_hot_labels[:, c], predictions=one_hot_predictions[:, c], weights=weights
-        #     )
-        #     fn, fn_op = tf.metrics.false_negatives(
-        #         labels=one_hot_labels[:, c], predictions=one_hot_predictions[:, c], weights=weights
-        #     )
-        #     tp_fp_fn_op = tf.group(tp_op, fp_op, fn_op)
-        #     iou = tf.where(tf.greater(tp + fn, 0.0), tp / (tp + fn + fp), tf.constant(np.NaN))
-        #     metric_map["eval/%s" % predictions_tag_c] = (iou, tp_fp_fn_op)
-        #
-        # (metrics_to_values, metrics_to_updates) = contrib_metrics.aggregate_metric_map(metric_map)
-        #
         session_creator = monitored_session.ChiefSessionCreator(
             checkpoint_filename_with_path=FLAGS.checkpoint_path
         )
@@ -244,10 +222,6 @@ def main(unused_argv):
         else:
             yaml_data = None
 
-        # open log file (info about process and calculations)
-        log_file_path = os.path.join(FLAGS.eval_logdir, "%s_log.txt" % FLAGS.dataset_name)
-        logfile = open(log_file_path, "a+")
-
         im_size = FLAGS.eval_crop_size[0], FLAGS.eval_crop_size[1]
 
         with open(yaml_file_path, "a+") as yaml_file:
@@ -255,33 +229,23 @@ def main(unused_argv):
 
                 while not session.should_stop():
                     (
-                        # metrics_updates_batch,
-                        # metrics_results_batch,
                         image_name_batch,
-                        # images_batch,
                         predictions_batch,
                         labels_batch,
-                        weights_batch
-                    ) = session.run(
-                        [
-                            # metrics_to_updates,
-                            # metrics_to_values,
-                            samples[common.IMAGE_NAME],
-                            # samples[common.IMAGE],
-                            predictions,
-                            labels,
-                            weights
-                        ]
-                    )
+                        weights_batch,
+                    ) = session.run([samples[common.IMAGE_NAME], predictions, labels, weights,])
 
-                    # get original image path
-                    for image_path in image_name_batch:
+                    for image_index in range(FLAGS.eval_batch_size):
+
+                        image_path = image_name_batch[image_index]
+                        pred = predictions_batch[image_index]
+                        label = labels_batch[image_index]
+                        sample_weights = weights_batch[image_index]
 
                         # dictionary for image data to save in yaml file
                         image_data_dict = {}
 
                         image_path = image_path.decode("utf-8")
-                        logfile.writelines(["original image path:%s" % image_path, "\n"])
 
                         base_name = os.path.abspath(image_path).split("/")[-1]
 
@@ -296,19 +260,14 @@ def main(unused_argv):
 
                         # check if already calculated for this image
                         if yaml_data and image_name in yaml_data:
-                            logfile.write("%s already exists\n" % image_name)
+                            print("%s already exists\n" % image_name)
                         else:
-                            logfile.writelines(["image name:%s" % image_name, "\n"])
                             image_data_dict["path"] = image_path
 
-                            # image = images_batch[idx]
-                            label = labels_batch
-                            w = np.array(weights_batch, dtype=np.int32)
-                            pred = predictions_batch
                             # save images
                             if FLAGS.save_path:
                                 # n_im = image.reshape(im_size)
-                                n_w = w.reshape(im_size)
+                                n_w = sample_weights.reshape(im_size)
                                 n_label = label.reshape(im_size) * n_w
                                 n_pred = pred.reshape(im_size) * n_w
 
@@ -325,121 +284,25 @@ def main(unused_argv):
                                 #     imsave(os.path.join(image_path, "original_images", new_name), n_im)
 
                             classes = np.arange(dataset.num_of_classes)
-                            all_iou = []  # for calculation mean iou for image
 
-                            # calc for each class
-                            for c in classes:
-                                if c not in pred:
-                                    logfile.writelines(
-                                        ["class %s" % str(c), " not in prediction ", "\n"]
-                                    )
-                                    if c in label:
-                                        logfile.writelines(["class %s" % str(c), " in label ", "\n"])
-                                    else:
-                                        logfile.writelines(
-                                            ["class %s" % str(c), " also not in label ", "\n"]
-                                        )
-
-                                c_label = 1 * (label == c)
-                                c_pred = 1 * (pred == c)
-                                c_m = confusion_matrix(c_label, c_pred, sample_weight=w).ravel()
-
-                                if len(c_m) < 4:  # only if all 0 or all 1
-                                    tp = tn = fp = fn = 0
-                                    if np.all(c_pred * c_label):  # if all 1
-                                        tp = c_m[0]
-                                    else:  # all is 0
-                                        tn = c_m[0]
-
-                                    c_m = tn, fp, fn, tp
-                                else:
-                                    tn, fp, fn, tp = c_m
-
-                                # calc iou for this class
-                                iou = np.NaN
-                                if tp + fn + fp > 0.0:
-                                    iou = tp / (tp + fn + fp)
-
-                                if not np.isnan(iou):
-                                    all_iou.append(iou)
-
-                                # confusion matrix in %
-                                sum_cm = np.sum(c_m)
-                                if sum_cm > 0:
-                                    c_m_p = c_m / sum_cm
-                                else:
-                                    c_m_p = 0, 0, 0, 0
-                                tn_p, fp_p, fn_p, tp_p = c_m_p
-
-                                lines = [
-                                    "class " + str(c) + " iou: " + str(iou) + "\n",
-                                    "tn=" + str(tn_p) + "\n",
-                                    "fp=" + str(fp_p) + "\n",
-                                    "fn=" + str(fn_p) + "\n",
-                                    "tp=" + str(tp_p) + "\n",
-                                ]
-                                logfile.writelines(lines)
-
-                                c_m_data = [float(tn_p), float(fp_p), float(fn_p), float(tp_p)]
-                                image_data_dict["confusion_mat_%s" % c] = c_m_data
-                                image_data_dict["class_%s_iou" % c] = float(iou)
-
-                            # mean iou calc
-                            mean_iou = np.mean(all_iou)
+                            confus_mat = confusion_matrix(label, pred, sample_weight=sample_weights)
+                            true_positives = np.diag(confus_mat)
+                            sum_over_row = np.sum(confus_mat, axis=0)
+                            sum_over_col = np.sum(confus_mat, axis=1)
+                            # sum_over_row + sum_over_col =
+                            #     2 * true_positives + false_positives + false_negatives.
+                            denominator = sum_over_row + sum_over_col - true_positives
+                            num_valid_entries = np.sum((denominator != 0))
+                            iou = divide_no_nan(true_positives, denominator)
+                            mean_iou = divide_no_nan(np.sum(iou), num_valid_entries)
                             image_data_dict["mean_iou"] = float(mean_iou)
-                            lines = ["mean_iou: %s\n" % mean_iou]
+                            image_data_dict["confusion_mat"] = confus_mat
+                            for c in classes:
+                                image_data_dict["class_%s_iou" % c] = float(iou[c])
 
-                            # # add the calc (mean for all images so far) from original eval code to log file
-                            # for m, v in metrics_results_batch.items():
-                            #     lines.append(str(m) + ": " + str(v) + "\n")
-                            # logfile.writelines(lines)
-
-                            # update yaml file with image info
                             yaml.dump({image_name: image_data_dict}, yaml_file)
 
         yaml_file.close()
-        logfile.close()
-
-        # #             print(weights_batch.shape)
-        # #             print("w=", np.unique(weights_batch))
-        #             idx = np.where(weights_batch == 1)
-        #             print("idx=", idx)
-        #             vals_to_ignore = np.unique(labels_batch[idx])
-        #             print(vals_to_ignore)
-        #             print(len(np.where(weights_batch != 1)[0]))
-
-        # summary_ops = []
-        # for metric_name, metric_value in six.iteritems(metrics_to_values):
-        #   op = tf.summary.scalar(metric_name, metric_value)
-        #   op = tf.Print(op, [metric_value], metric_name)
-        #   summary_ops.append(op)
-        #
-        # summary_op = tf.summary.merge(summary_ops)
-        # summary_hook = contrib_training.SummaryAtEndHook(
-        #     log_dir=FLAGS.eval_logdir, summary_op=summary_op)
-        # hooks = [summary_hook]
-        #
-        # num_eval_iters = None
-        # if FLAGS.max_number_of_evaluations > 0:
-        #   num_eval_iters = FLAGS.max_number_of_evaluations
-        #
-        # if FLAGS.quantize_delay_step >= 0:
-        #   contrib_quantize.create_eval_graph()
-        #
-        # contrib_tfprof.model_analyzer.print_model_analysis(
-        #     tf.get_default_graph(),
-        #     tfprof_options=contrib_tfprof.model_analyzer
-        #     .TRAINABLE_VARS_PARAMS_STAT_OPTIONS)
-        # contrib_tfprof.model_analyzer.print_model_analysis(
-        #     tf.get_default_graph(),
-        #     tfprof_options=contrib_tfprof.model_analyzer.FLOAT_OPS_OPTIONS)
-        # contrib_training.evaluate_repeatedly(
-        #     checkpoint_dir=FLAGS.checkpoint_dir,
-        #     master=FLAGS.master,
-        #     eval_ops=list(metrics_to_updates.values()),
-        #     max_number_of_evaluations=num_eval_iters,
-        #     hooks=hooks,
-        #     eval_interval_secs=FLAGS.eval_interval_secs)
 
 
 if __name__ == "__main__":
