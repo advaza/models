@@ -217,13 +217,13 @@ def main(unused_argv):
 
         if os.path.exists(yaml_file_path):
             yaml_file = open(yaml_file_path)
-            yaml_data = yaml.load(yaml_file, Loader=yaml.FullLoader)
+            yaml_data = yaml.load(yaml_file)
             yaml_file.close()
         else:
             yaml_data = None
 
         im_size = FLAGS.eval_crop_size[0], FLAGS.eval_crop_size[1]
-
+        batch_index = 0
         with open(yaml_file_path, "a+") as yaml_file:
             with monitored_session.MonitoredSession(session_creator=session_creator) as session:
 
@@ -246,21 +246,11 @@ def main(unused_argv):
                         image_data_dict = {}
 
                         image_path = image_path.decode("utf-8")
-
-                        base_name = os.path.abspath(image_path).split("/")[-1]
-
-                        if "mhp" in image_path:
-                            image_name = "mhp/" + base_name
-                        elif "modanet" in image_path:
-                            image_name = "modanet/" + base_name
-                        elif "imaterialist" in image_path:
-                            image_name = "imaterialist/" + base_name
-                        else:
-                            image_name = image_path
+                        yaml_key = (batch_index, image_index)
 
                         # check if already calculated for this image
-                        if yaml_data and image_name in yaml_data:
-                            print("%s already exists\n" % image_name)
+                        if yaml_data and yaml_key in yaml_data:
+                            print("%s already exists\n" % image_path)
                         else:
                             image_data_dict["path"] = image_path
 
@@ -271,7 +261,7 @@ def main(unused_argv):
                                 n_label = label.reshape(im_size) * n_w
                                 n_pred = pred.reshape(im_size) * n_w
 
-                                base_name = Path(image_name).stem
+                                base_name = Path(os.path.basename(image_path)).stem
                                 new_name = base_name + ".png"
 
                                 if FLAGS.save_predictions:
@@ -300,8 +290,9 @@ def main(unused_argv):
                             for c in classes:
                                 image_data_dict["class_%s_iou" % c] = float(iou[c])
 
-                            yaml.dump({image_name: image_data_dict}, yaml_file)
+                            yaml.dump({yaml_key: image_data_dict}, yaml_file)
 
+                    batch_index += 1
         yaml_file.close()
 
 
