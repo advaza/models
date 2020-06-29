@@ -398,7 +398,7 @@ class Dataset(object):
     else:
       dataset = dataset.repeat(1)
 
-    dataset = dataset.batch(self.batch_size).prefetch(self.batch_size)
+    dataset = dataset.batch(self.batch_size, drop_remainder=True).prefetch(self.batch_size)
     return dataset.make_one_shot_iterator()
 
   def _get_all_files(self):

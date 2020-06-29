@@ -17,33 +17,16 @@
 
 See model.py for more details and usage.
 """
-import ntpath
-
 import numpy as np
-
-# import six
 import tensorflow as tf
+import time
 
-# from tensorflow.python.platform import tf_logging as logging
 
-from tensorflow.contrib import metrics as contrib_metrics
-
-# from tensorflow.contrib import training as contrib_training
-
-from tensorflow.python.training import (
-    monitored_session,
-    # session_run_hook,
-    # basic_session_run_hooks,
-    # training_util,
-)
+from tensorflow.python.training import monitored_session
 from deeplab import common
 from deeplab import model
 from deeplab.datasets import data_generator
-from pathlib import Path
 
-
-# from tensorflow.python.summary import summary
-from sklearn.metrics import confusion_matrix
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -136,10 +119,11 @@ def main(unused_argv):
         max_resize_value=FLAGS.max_resize_value,
         resize_factor=FLAGS.resize_factor,
         model_variant=FLAGS.model_variant,
-        num_readers=2,
+        num_readers=4,
         is_training=False,
         should_shuffle=False,
         should_repeat=False,
+        get_original_image=False,
     )
 
     tf.gfile.MakeDirs(FLAGS.eval_logdir)
@@ -158,6 +142,9 @@ def main(unused_argv):
         # Set shape in order for tf.contrib.tfprof.model_analyzer to work properly.
         samples[common.IMAGE].set_shape(
             [FLAGS.eval_batch_size, int(FLAGS.eval_crop_size[0]), int(FLAGS.eval_crop_size[1]), 3]
+        )
+        samples[common.LABEL].set_shape(
+            [FLAGS.eval_batch_size, int(FLAGS.eval_crop_size[0]), int(FLAGS.eval_crop_size[1]), 1]
         )
         if tuple(FLAGS.eval_scales) == (1.0,):
             tf.logging.info("Performing single-scale test.")
@@ -185,32 +172,24 @@ def main(unused_argv):
         # are not evaluated since the corresponding regions contain weights = 0.
         labels = tf.where(tf.equal(labels, dataset.ignore_label), tf.zeros_like(labels), labels)
 
-        predictions_tag = "miou"
-        for eval_scale in FLAGS.eval_scales:
-            predictions_tag += "_" + str(eval_scale)
-        if FLAGS.add_flipped_images:
-            predictions_tag += "_flipped"
+        print("labels:", labels, "weights:", weights, "predictions:", predictions)
+        confusion_matrices = tf.stack(
+            [
+                tf.math.confusion_matrix(
+                    labels[i],
+                    predictions[i],
+                    num_classes=dataset.num_of_classes,
+                    weights=weights[i],
+                    dtype=tf.int32,
+                )
+                for i in range(FLAGS.eval_batch_size)
+            ],
+            axis=0,
+        )
 
         session_creator = monitored_session.ChiefSessionCreator(
             checkpoint_filename_with_path=FLAGS.checkpoint_path
         )
-
-        # create the folders for saving the data:
-        if FLAGS.save_path:
-            pred_path = os.path.join(FLAGS.save_path, "predictions")
-            labels_path = os.path.join(FLAGS.save_path, "labels")
-            weights_path = os.path.join(FLAGS.save_path, "weights")
-            images_path = os.path.join(FLAGS.save_path, "original_images")
-
-        # assert paths exist
-        if FLAGS.save_predictions:
-            assert_path(pred_path)
-        if FLAGS.save_labels:
-            assert_path(labels_path)
-        if FLAGS.save_weights:
-            assert_path(weights_path)
-        if FLAGS.save_images:
-            assert_path(images_path)
 
         # open the results yaml - if exists
         yaml_file_path = os.path.join(FLAGS.eval_logdir, "%s_results.yaml" % FLAGS.dataset_name)
@@ -222,25 +201,19 @@ def main(unused_argv):
         else:
             yaml_data = None
 
-        im_size = FLAGS.eval_crop_size[0], FLAGS.eval_crop_size[1]
         batch_index = 0
         with open(yaml_file_path, "a+") as yaml_file:
             with monitored_session.MonitoredSession(session_creator=session_creator) as session:
 
                 while not session.should_stop():
-                    (
-                        image_name_batch,
-                        predictions_batch,
-                        labels_batch,
-                        weights_batch,
-                    ) = session.run([samples[common.IMAGE_NAME], predictions, labels, weights,])
+                    (image_name_batch, confusion_matrices_batch,) = session.run(
+                        [samples[common.IMAGE_NAME], confusion_matrices]
+                    )
 
                     for image_index in range(FLAGS.eval_batch_size):
 
                         image_path = image_name_batch[image_index]
-                        pred = predictions_batch[image_index]
-                        label = labels_batch[image_index]
-                        sample_weights = weights_batch[image_index]
+                        confus_mat = confusion_matrices_batch[image_index]
 
                         # dictionary for image data to save in yaml file
                         image_data_dict = {}
@@ -254,28 +227,6 @@ def main(unused_argv):
                         else:
                             image_data_dict["path"] = image_path
 
-                            # save images
-                            if FLAGS.save_path:
-                                # n_im = image.reshape(im_size)
-                                n_w = sample_weights.reshape(im_size)
-                                n_label = label.reshape(im_size) * n_w
-                                n_pred = pred.reshape(im_size) * n_w
-
-                                base_name = Path(os.path.basename(image_path)).stem
-                                new_name = base_name + ".png"
-
-                                if FLAGS.save_predictions:
-                                    imsave(os.path.join(pred_path, new_name), n_pred)
-                                if FLAGS.save_labels:
-                                    imsave(os.path.join(labels_path, new_name), n_label)
-                                if FLAGS.save_weights:
-                                    imsave(os.path.join(weights_path, new_name), n_w)
-                                # if FLAGS.save_images:
-                                #     imsave(os.path.join(image_path, "original_images", new_name), n_im)
-
-                            classes = np.arange(dataset.num_of_classes)
-
-                            confus_mat = confusion_matrix(label, pred, sample_weight=sample_weights)
                             true_positives = np.diag(confus_mat)
                             sum_over_row = np.sum(confus_mat, axis=0)
                             sum_over_col = np.sum(confus_mat, axis=1)
@@ -287,7 +238,7 @@ def main(unused_argv):
                             mean_iou = divide_no_nan(np.sum(iou), num_valid_entries)
                             image_data_dict["mean_iou"] = float(mean_iou)
                             image_data_dict["confusion_mat"] = confus_mat
-                            for c in classes:
+                            for c in range(dataset.num_of_classes):
                                 image_data_dict["class_%s_iou" % c] = float(iou[c])
 
                             yaml.dump({yaml_key: image_data_dict}, yaml_file)
