@@ -172,7 +172,6 @@ def main(unused_argv):
         # are not evaluated since the corresponding regions contain weights = 0.
         labels = tf.where(tf.equal(labels, dataset.ignore_label), tf.zeros_like(labels), labels)
 
-        print("labels:", labels, "weights:", weights, "predictions:", predictions)
         confusion_matrices = tf.stack(
             [
                 tf.math.confusion_matrix(
