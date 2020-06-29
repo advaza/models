@@ -206,10 +206,10 @@ def main(unused_argv):
             with monitored_session.MonitoredSession(session_creator=session_creator) as session:
 
                 while not session.should_stop():
+                    start_time = time.time()
                     (image_name_batch, confusion_matrices_batch,) = session.run(
                         [samples[common.IMAGE_NAME], confusion_matrices]
                     )
-
                     for image_index in range(FLAGS.eval_batch_size):
 
                         image_path = image_name_batch[image_index]
@@ -243,6 +243,12 @@ def main(unused_argv):
 
                             yaml.dump({yaml_key: image_data_dict}, yaml_file)
 
+                    if batch_index % 20 == 0:
+                        batch_time = time.time() - start_time
+                        print(
+                            "sec/batch: %.4f sec/image: %.4f"
+                            % (batch_time, (batch_time / FLAGS.eval_batch_size))
+                        )
                     batch_index += 1
         yaml_file.close()
 
