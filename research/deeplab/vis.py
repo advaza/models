@@ -204,10 +204,10 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
         semantic_prediction = cv2.resize(semantic_prediction,
                            new_shape,
                            interpolation=cv2.INTER_NEAREST)
-      if semantic_probs is not None:
-        semantic_probs = np.stack([
-          cv2.resize(semantic_probs[:, :, i], new_shape, interpolation=cv2.INTER_LINEAR)
-          for i in range(semantic_probs.shape[-1])], axis=2)
+        if semantic_probs is not None:
+            semantic_probs = np.stack([
+            cv2.resize(semantic_probs[:, :, i], new_shape, interpolation=cv2.INTER_LINEAR)
+            for i in range(semantic_probs.shape[-1])], axis=2)
 
     else:
       semantic_prediction = semantic_prediction[:image_height, :image_width]
@@ -275,7 +275,8 @@ def main(unused_argv):
       should_shuffle=False,
       should_repeat=False,
       num_classes=FLAGS.num_classes,
-      get_resized_image_shape=True)
+      get_resized_image_shape=True,
+      get_original_image=True)
 
   train_id_to_eval_id = None
   if dataset.dataset_name == data_generator.get_cityscapes_dataset_name():
