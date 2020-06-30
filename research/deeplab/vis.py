@@ -211,6 +211,7 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
 
     else:
       semantic_prediction = semantic_prediction[:image_height, :image_width]
+      semantic_probs = semantic_probs[:image_height, :image_width]
 
     image_filename = ".".join(os.path.basename(image_names[i].decode("utf-8")).split(".")[:-1])
     if FLAGS.also_save_images_and_masks:
@@ -275,7 +276,7 @@ def main(unused_argv):
       should_shuffle=False,
       should_repeat=False,
       num_classes=FLAGS.num_classes,
-      get_resized_image_shape=True,
+      get_resized_image_shape=FLAGS.min_resize_value or FLAGS.max_resize_value,
       get_original_image=True)
 
   train_id_to_eval_id = None
@@ -326,7 +327,7 @@ def main(unused_argv):
     probs = predictions[common.OUTPUT_TYPE + model.PROB_SUFFIX]
     predictions = predictions[common.OUTPUT_TYPE]
 
-    if FLAGS.min_resize_value and FLAGS.max_resize_value:
+    if FLAGS.min_resize_value or FLAGS.max_resize_value:
       # Only support batch_size = 1, since we assume the dimensions of original
       # image after tf.squeeze is [height, width, 3].
       assert FLAGS.vis_batch_size == 1
