@@ -102,7 +102,7 @@ def _convert_dataset(dataset_split, dataset_dir_list, dataset_label_dir_list, nu
             seg_names.append(seg)
             new_img_names.append(image_file)
         else:
-            print("Couldn't find pair for %s in %s:" % (image_file, dataset_label_dir))
+            print("Couldn't find pair for %s in %s" % (image_file, dataset_label_dir))
       img_names = new_img_names
       all_data_files += list(zip(img_names, seg_names))
     else:
