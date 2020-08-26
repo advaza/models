@@ -384,6 +384,9 @@ class Dataset(object):
     """
 
     files = self._get_all_files()
+    if not files:
+        raise("Couldn't find TFRecords of split: %s in directory:%s" %
+              (self.split_name, self.dataset_dir))
 
     dataset = (
         tf.data.TFRecordDataset(files, num_parallel_reads=self.num_readers)
