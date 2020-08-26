@@ -157,8 +157,10 @@ def _convert_train_id_to_eval_id(prediction, train_id_to_eval_id):
   return converted_prediction
 
 
-def _process_batch(sess, original_images, semantic_predictions, semantic_probs, image_names,
-                   image_heights, image_widths, image_id_offset, save_dir, overlay_dir,
+def _process_batch(sess, original_images_tensor, semantic_predictions_tensor,
+                   semantic_probs_tensor, image_names_tensor,
+                   image_heights_tensor, image_widths_tensor, image_id_offset, save_dir,
+                   overlay_dir,
                    raw_save_dir, train_id_to_eval_id=None, max_image_dim=1024, label_names=None):
   """Evaluates one single batch qualitatively.
   Args:
@@ -173,22 +175,23 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
     raw_save_dir: The directory where the raw predictions will be saved.
     train_id_to_eval_id: A list mapping from train id to eval id.
   """
-  (original_images,
-   semantic_predictions,
-   semantic_probs,
-   image_names,
-   image_heights,
-   image_widths) = sess.run([original_images, semantic_predictions, semantic_probs,
-                             image_names, image_heights, image_widths])
+  (original_images_res,
+   semantic_predictions_res,
+   semantic_probs_res,
+   image_names_res,
+   image_heights_res,
+   image_widths_res) = sess.run([original_images_tensor, semantic_predictions_tensor,
+                                 semantic_probs_tensor,
+                             image_names_tensor, image_heights_tensor, image_widths_tensor])
 
-  num_image = semantic_predictions.shape[0]
+  num_image = semantic_predictions_res.shape[0]
 
   for i in range(num_image):
-    image_height = np.squeeze(image_heights[i])
-    image_width = np.squeeze(image_widths[i])
-    original_image = np.squeeze(original_images[i])
-    semantic_prediction = np.squeeze(semantic_predictions[i])
-    semantic_probs = np.squeeze(semantic_probs[i])
+    image_height = np.squeeze(image_heights_res[i])
+    image_width = np.squeeze(image_widths_res[i])
+    original_image = np.squeeze(original_images_res[i])
+    semantic_prediction = np.squeeze(semantic_predictions_res[i])
+    semantic_probs = np.squeeze(semantic_probs_res[i])
 
     if FLAGS.min_resize_value or FLAGS.max_resize_value:
 
@@ -213,7 +216,7 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
       semantic_prediction = semantic_prediction[:image_height, :image_width]
       semantic_probs = semantic_probs[:image_height, :image_width]
 
-    image_filename = ".".join(os.path.basename(image_names[i].decode("utf-8")).split(".")[:-1])
+    image_filename = ".".join(os.path.basename(image_names_res[i].decode("utf-8")).split(".")[:-1])
     if FLAGS.also_save_images_and_masks:
 
       # Save image.
@@ -238,7 +241,8 @@ def _process_batch(sess, original_images, semantic_predictions, semantic_probs, 
                      seg_bg_color=FLAGS.seg_bg_color,
                      show_plot=False,
                      max_image_dim=1024,
-                     background_class=True)
+                     background_class=True,
+                     title="xception65_single-class")
     # save_annotation.vis_segmentation(
     #     original_image, semantic_prediction, semantic_probs, save_dir,
     #     _OVERLAY_FORMAT % image_filename,
@@ -381,12 +385,12 @@ def main(unused_argv):
         while not sess.should_stop():
           tf.logging.info('Visualizing batch %d', batch + 1)
           _process_batch(sess=sess,
-                         original_images=samples[common.ORIGINAL_IMAGE],
-                         semantic_predictions=predictions,
-                         semantic_probs=probs,
-                         image_names=samples[common.IMAGE_NAME],
-                         image_heights=samples[common.HEIGHT],
-                         image_widths=samples[common.WIDTH],
+                         original_images_tensor=samples[common.ORIGINAL_IMAGE],
+                         semantic_predictions_tensor=predictions,
+                         semantic_probs_tensor=probs,
+                         image_names_tensor=samples[common.IMAGE_NAME],
+                         image_heights_tensor=samples[common.HEIGHT],
+                         image_widths_tensor=samples[common.WIDTH],
                          image_id_offset=image_id_offset,
                          save_dir=save_dir,
                          overlay_dir=overlay_dir,
