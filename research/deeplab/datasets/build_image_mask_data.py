@@ -135,8 +135,12 @@ def _convert_dataset(dataset_split, dataset_dir_list, dataset_label_dir_list, nu
         sys.stdout.flush()
         # Read the image.
         image_filename = img_names[i]
-        image_data = tf.gfile.FastGFile(image_filename, 'rb').read()
-        height, width = image_reader.read_image_dims(image_data)
+        try:
+            image_data = tf.gfile.FastGFile(image_filename, 'rb').read()
+            height, width = image_reader.read_image_dims(image_data)
+        except  :
+            print("Image type is invalid: %s", image_filename)
+            continue
         seg_data = None
         if dataset_label_dir:
             # Read the semantic segmentation annotation.
