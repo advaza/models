@@ -6,7 +6,7 @@ import tensorflow as tf
 from object_detection.utils import dataset_util
 
 
-flags = tf.app.flags
+flags = tf.compat.v1.flags
 flags.DEFINE_string("output_path", "", "Path to output TFRecord")
 flags.DEFINE_string("annotation_file", "", "Path to CSV annotation file.")
 flags.DEFINE_string("images_path", "", "Path to dataset images.")
@@ -30,7 +30,7 @@ def create_tf_example(example, images_path):
     filename = example["Filename"]
 
     # Encoded image bytes
-    with tf.gfile.GFile(osp.join(images_path, filename), "rb") as fid:
+    with tf.io.gfile.GFile(osp.join(images_path, filename), "rb") as fid:
         encoded_image_data = fid.read()
 
     # b'jpeg' or b'png'
@@ -76,7 +76,7 @@ def create_tf_example(example, images_path):
 
 
 def main(_):
-    writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
+    writer = tf.compat.v1.python_io.TFRecordWriter(FLAGS.output_path)
     bbox_data = pd.read_csv(FLAGS.annotation_file, dtype=str)
     data_values = bbox_data.values.tolist()
     data_keys = bbox_data.columns.to_list()
@@ -89,4 +89,4 @@ def main(_):
 
 
 if __name__ == "__main__":
-    tf.app.run()
+    tf.compat.v1.app.run()
