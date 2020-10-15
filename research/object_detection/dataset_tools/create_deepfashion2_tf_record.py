@@ -35,14 +35,14 @@ def create_tf_example(example, images_path):
     width = int(example["Width"])
 
     # Filename of the image. Empty if image is not from file
-    filename = example["Filename"]
+    filename = example["Filename"].encode()
 
     # Encoded image bytes
     with tf.io.gfile.GFile(osp.join(images_path, filename), "rb") as fid:
         encoded_image_data = fid.read()
 
     # b'jpeg' or b'png'
-    image_format = example["Format"]
+    image_format = example["Format"].encode()
 
     # List of normalized left x coordinates in bounding box (1 per box)
     xmins = [x / width for x in str_to_list(example["BBox/xmin"], float)]
@@ -57,7 +57,7 @@ def create_tf_example(example, images_path):
     ymaxs = [x / height for x in str_to_list(example["BBox/ymax"], float)]
 
     # List of string class name of bounding box (1 per box)
-    classes_text = str_to_list(example["ClassName"], str)
+    classes_text = [s.encode() for s in str_to_list(example["ClassName"], str)]
 
     # List of integer class id of bounding box (1 per box)
     classes = str_to_list(example["ClassID"], int)
