@@ -1,16 +1,24 @@
 # Copyright (c) 2019 Lightricks. All rights reserved.
+import math
+import os
 import os.path as osp
 import pandas as pd
+import sys
 import tensorflow as tf
 
 from object_detection.utils import dataset_util
 
 
 flags = tf.compat.v1.flags
-flags.DEFINE_string("output_path", "", "Path to output TFRecord")
+flags.DEFINE_string("output_dir", "", "Path to output TFRecords directory.")
 flags.DEFINE_string("annotation_file", "", "Path to CSV annotation file.")
 flags.DEFINE_string("images_path", "", "Path to dataset images.")
-
+flags.DEFINE_integer("num_shards", 4, "Number of output TFRecords.")
+flags.DEFINE_string(
+    "split",
+    "",
+    "Dataset split that will be used as TFRecords basename. " "E.g., train, val, test, etc.",
+)
 FLAGS = flags.FLAGS
 
 
@@ -76,16 +84,29 @@ def create_tf_example(example, images_path):
 
 
 def main(_):
-    writer = tf.compat.v1.python_io.TFRecordWriter(FLAGS.output_path)
+
     bbox_data = pd.read_csv(FLAGS.annotation_file, dtype=str)
     data_values = bbox_data.values.tolist()
     data_keys = bbox_data.columns.to_list()
 
-    for example in data_values:
-        tf_example = create_tf_example(dict(zip(data_keys, example)), FLAGS.images_path)
-        writer.write(tf_example.SerializeToString())
+    num_images = len(data_values)
+    num_per_shard = int(math.ceil(num_images / FLAGS.num_shards))
 
-    writer.close()
+    os.makedirs(FLAGS.output_dir, exist_ok=True)
+    for shard_id in range(FLAGS.num_shards):
+        output_filename = osp.join(
+            FLAGS.output_dir, "%s-%05d-of-%05d.tfrecord" % (FLAGS.split, shard_id, FLAGS.num_shards)
+        )
+        with tf.compat.v1.python_io.TFRecordWriter(output_filename) as writer:
+            start_idx = shard_id * num_per_shard
+            end_idx = min((shard_id + 1) * num_per_shard, num_images)
+            for i in range(start_idx, end_idx):
+                sys.stdout.write(
+                    "\r>> Converting image %d/%d shard %d" % (i + 1, num_images, shard_id)
+                )
+                example = data_values[i]
+                tf_example = create_tf_example(dict(zip(data_keys, example)), FLAGS.images_path)
+                writer.write(tf_example.SerializeToString())
 
 
 if __name__ == "__main__":
