@@ -38,7 +38,7 @@ def create_tf_example(example, images_path):
     filename = example["Filename"].encode()
 
     # Encoded image bytes
-    with tf.io.gfile.GFile(osp.join(images_path, filename), "rb") as fid:
+    with tf.io.gfile.GFile(osp.join(images_path, example["Filename"]), "rb") as fid:
         encoded_image_data = fid.read()
 
     # b'jpeg' or b'png'
