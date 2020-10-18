@@ -8,7 +8,6 @@ import tensorflow as tf
 
 
 flags = tf.compat.v1.flags
-flags.DEFINE_string("output_dir", "", "Path to output TFRecords directory.")
 flags.DEFINE_string("annotation_file", "", "Path to CSV annotation file.")
 flags.DEFINE_string("images_path", "", "Path to dataset images (can be S3 path).")
 flags.DEFINE_string(
@@ -80,7 +79,6 @@ def main(_):
     data_values = bbox_data.values.tolist()
     data_keys = bbox_data.columns.to_list()
 
-    os.makedirs(FLAGS.output_dir, exist_ok=True)
     frames = []
     for example in progressbar.progressbar(data_values):
         frames.append(create_frame(dict(zip(data_keys, example)), FLAGS.images_path))
