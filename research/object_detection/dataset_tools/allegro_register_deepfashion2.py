@@ -33,9 +33,6 @@ def create_frame(example, images_path):
     # Image width
     frame.width = int(example["Width"])
 
-    # Filename of the image. Empty if image is not from file
-    frame.id = example["Filename"]
-
     # Add the frame metadata: format ('jpeg' or 'png') and filename.
     frame.metadata = {"image_format": example["Format"], "filename": example["Filename"]}
 
