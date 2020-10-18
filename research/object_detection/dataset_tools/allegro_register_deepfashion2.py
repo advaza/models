@@ -51,7 +51,7 @@ def create_frame(example, images_path):
     ymaxs = [x for x in str_to_list(example["BBox/ymax"], int)]
 
     # List of string class name of bounding box (1 per box)
-    classes_text = [s.encode() for s in str_to_list(example["ClassName"], str)]
+    classes_text = [s for s in str_to_list(example["ClassName"], str)]
 
     # List of integer class id of bounding box (1 per box)
     classes_id = str_to_list(example["ClassID"], int)
