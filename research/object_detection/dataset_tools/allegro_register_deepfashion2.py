@@ -16,6 +16,7 @@ flags.DEFINE_string(
     "Optional. Dataset split, i.e., train, val, test. Each "
     "split will be saved in a different version.",
 )
+flags.DEFINE_string("dataset_name", "", "Name of allegro dataset.")
 FLAGS = flags.FLAGS
 
 
