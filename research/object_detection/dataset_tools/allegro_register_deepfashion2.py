@@ -11,6 +11,12 @@ flags = tf.compat.v1.flags
 flags.DEFINE_string("output_dir", "", "Path to output TFRecords directory.")
 flags.DEFINE_string("annotation_file", "", "Path to CSV annotation file.")
 flags.DEFINE_string("images_path", "", "Path to dataset images (can be S3 path).")
+flags.DEFINE_string(
+    "split",
+    "",
+    "Optional. Dataset split, i.e., train, val, test. Each "
+    "split will be saved in a different version.",
+)
 FLAGS = flags.FLAGS
 
 
@@ -81,7 +87,13 @@ def main(_):
 
     # Create the dataset if it doesn't exist, and does nothing if it does.
     DatasetVersion.create_new_dataset(FLAGS.dataset_name)
-    dataset = DatasetVersion.get_current(dataset_name=FLAGS.dataset_name)
+    if FLAGS.split:
+        dataset = DatasetVersion.create_version(
+            dataset_name=FLAGS.dataset_name, version_name=FLAGS.split
+        )
+    else:
+        dataset = DatasetVersion.get_current(dataset_name=FLAGS.dataset_name)
+
     dataset.add_frames(frames)
 
 
