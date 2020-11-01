@@ -1,0 +1,4 @@
+tf-models-official==2.3.0
+tf-slim==1.1.0
+pycocotools==2.0.2
+protobuf-compiler
