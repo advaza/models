@@ -3,3 +3,4 @@ tf-slim==1.1.0
 pycocotools==2.0.2
 protobuf-compiler
 progressbar2
+lvis
