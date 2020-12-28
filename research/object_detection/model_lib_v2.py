@@ -270,11 +270,11 @@ def eager_train_step(detection_model,
     gradients, _ = tf.clip_by_global_norm(gradients, clip_gradients_value)
   optimizer.apply_gradients(zip(gradients, trainable_variables))
   tf.compat.v2.summary.scalar('learning_rate', learning_rate, step=global_step)
-  tf.compat.v2.summary.image(
-      name='train_input_images',
-      step=global_step,
-      data=features[fields.InputDataFields.image],
-      max_outputs=3)
+  # tf.compat.v2.summary.image(
+  #     name='train_input_images',
+  #     step=global_step,
+  #     data=features[fields.InputDataFields.image],
+  #     max_outputs=3)
   return total_loss
 
 
