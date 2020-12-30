@@ -138,6 +138,10 @@ flags.DEFINE_string('side_input_names', '',
                     'the names of the side input tensors required by the model '
                     'assuming the names will be a comma-separated list of '
                     'strings. This flag is required if using side inputs.')
+flags.DEFINE_boolean('network_only', False,
+                     'If True, export onlt network without pre/post processing functions.')
+flags.DEFINE_boolean('print_graph', False,
+                     'If True, prints the model graph, that can be later reviewd in Tensorboard.')
 
 flags.mark_flag_as_required('pipeline_config_path')
 flags.mark_flag_as_required('trained_checkpoint_dir')
@@ -152,7 +156,7 @@ def main(_):
   exporter_lib_v2.export_inference_graph(
       FLAGS.input_type, pipeline_config, FLAGS.trained_checkpoint_dir,
       FLAGS.output_directory, FLAGS.use_side_inputs, FLAGS.side_input_shapes,
-      FLAGS.side_input_types, FLAGS.side_input_names)
+      FLAGS.side_input_types, FLAGS.side_input_names, FLAGS.network_only, FLAGS.print_graph)
 
 
 if __name__ == '__main__':

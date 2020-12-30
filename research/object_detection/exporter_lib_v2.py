@@ -71,7 +71,9 @@ class DetectionInferenceModule(tf.Module):
 
   def __init__(self, detection_model,
                use_side_inputs=False,
-               zipped_side_inputs=None):
+               zipped_side_inputs=None,
+               network_only=False,
+               fixed_image_shape=(640,640,3)):
     """Initializes a module for detection.
 
     Args:
@@ -80,6 +82,8 @@ class DetectionInferenceModule(tf.Module):
       zipped_side_inputs: the zipped side inputs.
     """
     self._model = detection_model
+    self._network_only = network_only
+    self._fixed_image_shape = fixed_image_shape
 
   def _get_side_input_signature(self, zipped_side_inputs):
     sig = []
@@ -107,17 +111,22 @@ class DetectionInferenceModule(tf.Module):
     label_id_offset = 1
 
     image = tf.cast(image, tf.float32)
-    image, shapes = self._model.preprocess(image)
-    prediction_dict = self._model.predict(image, shapes, **kwargs)
-    detections = self._model.postprocess(prediction_dict, shapes)
-    classes_field = fields.DetectionResultFields.detection_classes
-    detections[classes_field] = (
-        tf.cast(detections[classes_field], tf.float32) + label_id_offset)
+    if self._network_only:
+        prediction_dict = self._model.predict(image, self._fixed_image_shape, self._network_only,
+                                              **kwargs)
+        return prediction_dict['feature_maps']
+    else:
+        image, shapes = self._model.preprocess(image)
+        prediction_dict = self._model.predict(image, shapes, **kwargs)
+        detections = self._model.postprocess(prediction_dict, shapes)
+        classes_field = fields.DetectionResultFields.detection_classes
+        detections[classes_field] = (
+            tf.cast(detections[classes_field], tf.float32) + label_id_offset)
 
-    for key, val in detections.items():
-      detections[key] = tf.cast(val, tf.float32)
+        for key, val in detections.items():
+          detections[key] = tf.cast(val, tf.float32)
 
-    return detections
+        return detections
 
 
 class DetectionFromImageModule(DetectionInferenceModule):
@@ -125,7 +134,9 @@ class DetectionFromImageModule(DetectionInferenceModule):
 
   def __init__(self, detection_model,
                use_side_inputs=False,
-               zipped_side_inputs=None):
+               zipped_side_inputs=None,
+               network_only=False,
+               fixed_image_shape=(640,640,3)):
     """Initializes a module for detection.
 
     Args:
@@ -151,7 +162,9 @@ class DetectionFromImageModule(DetectionInferenceModule):
     # TODO(kaushikshiv): Check if omitting the signature also works.
     super(DetectionFromImageModule, self).__init__(detection_model,
                                                    use_side_inputs,
-                                                   zipped_side_inputs)
+                                                   zipped_side_inputs,
+                                                   network_only,
+                                                   fixed_image_shape)
 
 
 class DetectionFromFloatImageModule(DetectionInferenceModule):
@@ -209,7 +222,9 @@ def export_inference_graph(input_type,
                            use_side_inputs=False,
                            side_input_shapes='',
                            side_input_types='',
-                           side_input_names=''):
+                           side_input_names='',
+                           network_only=False,
+                           print_graph=False):
   """Exports inference graph for the model specified in the pipeline config.
 
   This function creates `output_directory` if it does not already exist,
@@ -255,14 +270,33 @@ def export_inference_graph(input_type,
                                               side_input_types,
                                               side_input_names)
 
+  fixed_image_shape = None
+  if network_only:
+    model_config = getattr(pipeline_config.model, pipeline_config.model.WhichOneof('model'))
+    height = model_config.image_resizer.fixed_shape_resizer.height
+    width = model_config.image_resizer.fixed_shape_resizer.width
+    fixed_image_shape = [1, height, width, 3]
   detection_module = DETECTION_MODULE_MAP[input_type](detection_model,
                                                       use_side_inputs,
-                                                      list(zipped_side_inputs))
+                                                      list(zipped_side_inputs),
+                                                      network_only,
+                                                      fixed_image_shape)
   # Getting the concrete function traces the graph and forces variables to
   # be constructed --- only after this can we save the checkpoint and
   # saved model.
   concrete_function = detection_module.__call__.get_concrete_function()
   status.assert_existing_objects_matched()
+  if print_graph:
+      graph_logdir = os.path.join(output_directory, 'graph')
+      writer = tf.summary.create_file_writer(graph_logdir)
+      tf.summary.trace_on(graph=True, profiler=True)
+      net_input = tf.zeros([1, 640, 640, 3], tf.uint8)
+      _ = concrete_function(tf.constant(net_input))
+      with writer.as_default():
+          tf.summary.trace_export(
+              name="model_fn_trace",
+              step=0,
+              profiler_outdir=graph_logdir)
 
   exported_checkpoint_manager = tf.train.CheckpointManager(
       ckpt, output_checkpoint_directory, max_to_keep=1)

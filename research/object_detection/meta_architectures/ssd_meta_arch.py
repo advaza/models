@@ -522,7 +522,7 @@ class SSDMetaArch(model.DetectionModel):
         ],
         axis=1)
 
-  def predict(self, preprocessed_inputs, true_image_shapes):
+  def predict(self, preprocessed_inputs, true_image_shapes, network_only=False):
     """Predicts unpostprocessed tensors from input tensor.
 
     This function takes an input batch of images and runs it through the forward
@@ -578,6 +578,8 @@ class SSDMetaArch(model.DetectionModel):
           feature_maps = self._feature_extractor.extract_features(
               preprocessed_inputs)
 
+    if network_only:
+        return {'feature_maps': feature_maps}
     feature_map_spatial_dims = self._get_feature_map_spatial_dims(
         feature_maps)
     image_shape = shape_utils.combined_static_and_dynamic_shape(
