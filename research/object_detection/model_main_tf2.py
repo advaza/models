@@ -29,6 +29,7 @@ python model_main_tf2.py -- \
 """
 from absl import flags
 import tensorflow.compat.v2 as tf
+import wandb
 from object_detection import model_lib_v2
 
 flags.DEFINE_string('pipeline_config_path', None, 'Path to pipeline config '
@@ -75,6 +76,7 @@ def main(unused_argv):
   flags.mark_flag_as_required('model_dir')
   flags.mark_flag_as_required('pipeline_config_path')
   tf.config.set_soft_device_placement(True)
+  wandb.init(config=FLAGS, sync_tensorboard=True)
 
   if FLAGS.checkpoint_dir:
     model_lib_v2.eval_continuously(
