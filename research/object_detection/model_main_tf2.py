@@ -27,6 +27,7 @@ python model_main_tf2.py -- \
   --pipeline_config_path=$PIPELINE_CONFIG_PATH \
   --alsologtostderr
 """
+import os
 from absl import flags
 import tensorflow.compat.v2 as tf
 import wandb
@@ -79,6 +80,7 @@ def main(unused_argv):
   wandb.init(config=FLAGS, sync_tensorboard=True)
 
   if FLAGS.checkpoint_dir:
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     model_lib_v2.eval_continuously(
         pipeline_config_path=FLAGS.pipeline_config_path,
         model_dir=FLAGS.model_dir,
