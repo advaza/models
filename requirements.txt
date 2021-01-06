@@ -5,3 +5,4 @@ protobuf-compiler
 progressbar2
 lvis
 opencv-python==4.3.0.36
+wandb
