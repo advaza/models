@@ -69,6 +69,8 @@ flags.DEFINE_integer(
 flags.DEFINE_boolean('record_summaries', True,
                      ('Whether or not to record summaries during'
                       ' training.'))
+flags.DEFINE_boolean('eval_on_cpu', True,
+                     'Whether run eval process on CPU.')
 
 FLAGS = flags.FLAGS
 
@@ -80,7 +82,8 @@ def main(unused_argv):
   wandb.init(config=FLAGS, sync_tensorboard=True)
 
   if FLAGS.checkpoint_dir:
-    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    if FLAGS.eval_on_cpu:
+      os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     model_lib_v2.eval_continuously(
         pipeline_config_path=FLAGS.pipeline_config_path,
         model_dir=FLAGS.model_dir,
